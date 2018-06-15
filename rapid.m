@@ -111,11 +111,23 @@ classdef rapid < magstim & handle
                    error('getResponse Must Be A Boolean');
             end
             
-            frequency = trainParameters.frequency;
-            numberOfPulses = trainParameters.numberOfPulses;
-            duration = trainParameters.duration;
-         
-            if ~(isnumeric(frequency)) || ~(isnumeric(numberOfPulses))|| ~(isnumeric(duration))
+            if ~isempty(trainParameters.frequency)
+                frequency = trainParameters.frequency;
+            else
+                frequency = [];
+            end
+             if ~isempty(trainParameters.numberOfPulses)
+                numberOfPulses = trainParameters.numberOfPulses;
+            else
+                numberOfPulses = [];
+             end
+             if ~isempty(trainParameters.duration)
+                duration = trainParameters.duration;
+            else
+                duration = [];
+            end
+                                            
+            if (isnumeric(frequency)) || ~(isnumeric(numberOfPulses))|| ~(isnumeric(duration))
                 error('frequency, numberOfPulses,and duration Must Be Numbers');
             end
             if (length(frequency) > 1) || (length(numberOfPulses) > 1) || (length(duration) > 1)
@@ -326,7 +338,7 @@ classdef rapid < magstim & handle
             end
            
             %% Create Control Command 
-            [errorOrSuccess, deviceResponse] =  self.processCommand('b@', getResponse, 4);
+            [errorOrSuccess, deviceResponse] =  self.processCommand('b@', getResponse, 3);
         end
           
         
