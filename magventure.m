@@ -76,7 +76,7 @@ classdef magventure < handle
             %% Close The Port
                 fclose(self.port);
             if (strcmp (self.port.Status,'closed'))
-               self.connected = 1;
+               self.connected = 0;
                errorOrSuccess = self.connected;
                deviceResponse = [];
             end
