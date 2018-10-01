@@ -16,6 +16,7 @@ classdef rapid < magstim & handle
         version = [];
         controlCommand = '';
         controlBytes;
+        armedOrnot = 0;
     end
     
     methods
@@ -76,7 +77,7 @@ classdef rapid < magstim & handle
             
             %% Create Control Command           
             [errorOrSuccess, deviceResponse] = self.processCommand(['@' sprintf('%03s',num2str(power))], getResponse, 3);
-
+             self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
         end
          
         function [errorOrSuccess, deviceResponse] = setTrain(self, trainParameters , varargin)
@@ -122,48 +123,64 @@ classdef rapid < magstim & handle
                 numberOfPulses = [];
              end
              if ~isempty(trainParameters.duration)
-                duration = trainParameters.duration;
-            else
-                duration = [];
-            end
-                                            
-            if (isnumeric(frequency)) || ~(isnumeric(numberOfPulses))|| ~(isnumeric(duration))
-                error('frequency, numberOfPulses,and duration Must Be Numbers');
-            end
-            if (length(frequency) > 1) || (length(numberOfPulses) > 1) || (length(duration) > 1)
-                error('Train Parameters Must Be Single Numerics');
-            end
-            
-            if ~(isempty(frequency) || isempty(numberOfPulses)|| isempty(duration))
-                error('Too Many Input Train Parameters');
-            end
-            if (isempty(frequency) && isempty(numberOfPulses)) || (isempty(frequency) && isempty(duration))...
-                || (isempty(duration) && isempty(numberOfPulses)) || (isempty(duration) && isempty(numberOfPulses)&& isempty(frequency) )
-                error('Not Enough Input Train Parameters');
-            end
-           
-            
-           energyPowerTable = [  0.0,   0.0,   0.1,   0.2,   0.4,   0.6,   0.9,   1.2,   1.6,   2.0,...
-                                 2.5,   3.0,   3.6,   4.3,   4.9,   5.7,   6.4,   7.3,   8.2,   9.1,...
-                                 10.1,  11.1,  12.2,  13.3,  14.5,  15.7,  17.0,  18.4,  19.7,  21.2,...
-                                 22.7,  24.2,  25.8,  27.4,  29.1,  30.8,  32.6,  34.5,  36.4,  38.3,...
-                                 40.3,  42.3,  44.4,  46.6,  48.8,  51.0,  53.3,  55.6,  58.0,  60.5,...
-                                 63.0,  65.5,  68.1,  70.7,  73.4,  76.2,  79.0,  81.8,  84.7,  87.7,...
-                                 90.7,  93.7,  96.8, 100.0, 103.2, 106.4, 109.7, 113.0, 116.4, 119.9,...
-                                123.4, 126.9, 130.5, 134.2, 137.9, 141.7, 145.5, 149.3, 153.2, 157.2,...
-                                161.2, 165.2, 169.3, 173.5, 177.7, 181.9, 186.3, 190.6, 195.0, 199.5,...
-                                204.0, 208.5, 213.1, 217.8, 222.5, 227.3, 232.1, 236.9, 241.9, 246.8, 252];
-            
-           [~, deviceResponse] = self.getParameters;
-           ePulse = energyPowerTable(deviceResponse.PowerA + 1); 
-            
-           if isempty(duration)
-               duration = numberOfPulses/frequency;
-           elseif isempty(numberOfPulses)  
-               numberOfPulses = duration * frequency;
-           elseif isempty(frequency)
-               frequency = numberOfPulses/duration;
-           end                
+                 duration = trainParameters.duration;
+             else
+                 duration = [];
+             end
+             
+             %Evaluating whether exactly 2 inputs are numeric
+             numericInputs = 0;
+             
+             if (isnumeric(frequency)) && ~isempty(frequency)
+                 if (length(frequency) > 1)
+                     error('Train Parameters Must Be Single Numerics.  Please doublecheck the frequency input.');
+                 end
+                 numericInputs = numericInputs + 1;
+             end
+             
+             if (isnumeric(numberOfPulses))  && ~isempty(numberOfPulses)
+                 if (length(numberOfPulses) > 1)
+                     error('Train Parameters Must Be Single Numerics.  Please doublecheck the numberOfPulses input.');
+                 end
+                 numericInputs = numericInputs + 1;
+             end
+             
+             if (isnumeric(duration))  && ~isempty(duration)
+                 if (length(duration) > 1)
+                     error('Train Parameters Must Be Single Numerics.  Please doublecheck the duration input.');
+                 end
+                 numericInputs = numericInputs + 1;
+             end
+             
+             if numericInputs ~= 2
+                 error('Please provide exactly 2 numerical inputs in the Train Parameter structure.')
+             end
+             
+             
+             energyPowerTable = [  0.0,   0.0,   0.1,   0.2,   0.4,   0.6,   0.9,   1.2,   1.6,   2.0,...
+                 2.5,   3.0,   3.6,   4.3,   4.9,   5.7,   6.4,   7.3,   8.2,   9.1,...
+                 10.1,  11.1,  12.2,  13.3,  14.5,  15.7,  17.0,  18.4,  19.7,  21.2,...
+                 22.7,  24.2,  25.8,  27.4,  29.1,  30.8,  32.6,  34.5,  36.4,  38.3,...
+                 40.3,  42.3,  44.4,  46.6,  48.8,  51.0,  53.3,  55.6,  58.0,  60.5,...
+                 63.0,  65.5,  68.1,  70.7,  73.4,  76.2,  79.0,  81.8,  84.7,  87.7,...
+                 90.7,  93.7,  96.8, 100.0, 103.2, 106.4, 109.7, 113.0, 116.4, 119.9,...
+                 123.4, 126.9, 130.5, 134.2, 137.9, 141.7, 145.5, 149.3, 153.2, 157.2,...
+                 161.2, 165.2, 169.3, 173.5, 177.7, 181.9, 186.3, 190.6, 195.0, 199.5,...
+                 204.0, 208.5, 213.1, 217.8, 222.5, 227.3, 232.1, 236.9, 241.9, 246.8, 252];
+             
+             [~, deviceResponse] = self.getParameters;
+             ePulse = energyPowerTable(deviceResponse.PowerA + 1);
+             
+             if isempty(duration)
+                 duration = numberOfPulses/frequency;
+                 duration = round(duration,1);
+             elseif isempty(numberOfPulses)
+                 numberOfPulses = duration * frequency;
+                 numberOfPulses = floor(numberOfPulses);
+             elseif isempty(frequency)
+                 frequency = numberOfPulses/duration;
+                 frequency = round(frequency,1);
+             end
                             
           
            %Frequency Validity
@@ -175,7 +192,7 @@ classdef rapid < magstim & handle
            end
             
            frequencycheck = frequency;
-           decimalPlaces = 0; % no of places after decimal initialized to 0.
+           decimalPlaces = 0; % number of places after decimal initialized to 0.
            temp = floor(frequencycheck);
            diff = frequencycheck - temp;
            while(diff > 0)
@@ -189,9 +206,9 @@ classdef rapid < magstim & handle
                error('frequency Can Have Up To Just A Single Decimal Place');
             end
            
-            if ((frequency / 10) > (1050 / ePulse))
-               error('Frequency Out Of Bounds');
-            end
+%             if ((frequency / 10) > (1050 / ePulse))
+%                error('Frequency Out Of Bounds');
+%             end
 
                 
             %Duration Validity
@@ -238,9 +255,11 @@ classdef rapid < magstim & handle
                       error('numberOfPulses Out Of Bounds');
                   end
               end 
-              if numberOfPulses >(1050 * deviceResponse.WaitTime * frequency) / ((frequency * ePulse) - 1050)                            
-                  error('Number Of Pulses Out Of Bounds');
-              end                
+               
+             [~, minWaitTime] = calcMinWaitTime(numberOfPulses, frequency, self);
+             if minWaitTime<0.5
+                 warning('You can try changing the input parameters to get precise results');
+             end
                                                                                                              
               %% Create Control Command
                                                              
@@ -262,7 +281,7 @@ classdef rapid < magstim & handle
                     padding = '%04s';
                 end
               [errorOrSuccess, deviceResponse] = self.processCommand(['D' sprintf(padding,num2str(numberOfPulses))], getResponse, 4);
-                                              
+              self.armedOrnot = deviceResponse.InstrumentStatus.Armed;                               
         end
         
         
@@ -307,6 +326,7 @@ classdef rapid < magstim & handle
             end
                
             [errorOrSuccess, deviceResponse] =  self.processCommand(commandString, getResponse, 4);
+            self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
         end
           
         function [errorOrSuccess, deviceResponse] = ignoreCoilSafetyInterlock(self, varargin)
@@ -339,6 +359,7 @@ classdef rapid < magstim & handle
            
             %% Create Control Command 
             [errorOrSuccess, deviceResponse] =  self.processCommand('b@', getResponse, 3);
+            self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
         end
           
         
@@ -383,8 +404,10 @@ classdef rapid < magstim & handle
             end
             if enable
                 [errorOrSuccess, deviceResponse] = self.processCommand(['[' sprintf(padding,'10')], getResponse, 4);
+                self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
             else
                 [errorOrSuccess, deviceResponse] = self.processCommand(['[' sprintf(padding,'00')], getResponse, 4);
+                self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
             end
             
         end
@@ -410,6 +433,7 @@ classdef rapid < magstim & handle
                 returnBytes = 21;
             end
             [errorOrSuccess, deviceResponse] =  self.processCommand('\@', true, returnBytes);
+            self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
         end
            
         %% Get Version
@@ -472,6 +496,7 @@ classdef rapid < magstim & handle
             % Keep a record of if we're connecting for the first time
             alreadyConnected = self.connected;
             [errorOrSuccess, deviceResponse] =  self.processCommand(commandString, getResponse, 3);
+            self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
             if ~errorOrSuccess
                 self.connected = enable;
                 if enable
@@ -512,6 +537,7 @@ classdef rapid < magstim & handle
             %% Create Control Command
             if self.version{1} >= 9
                 [errorOrSuccess, deviceResponse] =  self.processCommand('x@', true, 6);
+                self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
             else
                 errorOrSuccess = 7;
                 deviceResponse = 'This command is unavailable on your device';
@@ -527,6 +553,7 @@ classdef rapid < magstim & handle
             end
             %% Create Control Command
         	[errorOrSuccess, deviceResponse] = self.processCommand('I@', true, 6);
+            self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
         end
 
         %% Set Charge Delay
@@ -580,6 +607,7 @@ classdef rapid < magstim & handle
                     padding = '%04s';
                 end
                 [errorOrSuccess, deviceResponse] = self.processCommand(['n' sprintf(padding,num2str(chargeDelay))], getResponse, 3);
+                self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
             else
                 errorOrSuccess = 7;
                 deviceResponse = 'This command is unavailable on your device';
@@ -601,11 +629,35 @@ classdef rapid < magstim & handle
                     returnBytes = 6;
                 end
                 [errorOrSuccess, deviceResponse] =  self.processCommand('o@', true, returnBytes);
+                self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
             else
                 errorOrSuccess = 7;
                 deviceResponse = 'This command is unavailable on your device';
             end
-        end        
+        end  
+      function [errorOrSuccess, deviceResponse] = calcMinWaitTime(numberOfPulses, frequency, self)
+              energyPowerTable = [  0.0,   0.0,   0.1,   0.2,   0.4,   0.6,   0.9,   1.2,   1.6,   2.0,...
+                 2.5,   3.0,   3.6,   4.3,   4.9,   5.7,   6.4,   7.3,   8.2,   9.1,...
+                 10.1,  11.1,  12.2,  13.3,  14.5,  15.7,  17.0,  18.4,  19.7,  21.2,...
+                 22.7,  24.2,  25.8,  27.4,  29.1,  30.8,  32.6,  34.5,  36.4,  38.3,...
+                 40.3,  42.3,  44.4,  46.6,  48.8,  51.0,  53.3,  55.6,  58.0,  60.5,...
+                 63.0,  65.5,  68.1,  70.7,  73.4,  76.2,  79.0,  81.8,  84.7,  87.7,...
+                 90.7,  93.7,  96.8, 100.0, 103.2, 106.4, 109.7, 113.0, 116.4, 119.9,...
+                 123.4, 126.9, 130.5, 134.2, 137.9, 141.7, 145.5, 149.3, 153.2, 157.2,...
+                 161.2, 165.2, 169.3, 173.5, 177.7, 181.9, 186.3, 190.6, 195.0, 199.5,...
+                 204.0, 208.5, 213.1, 217.8, 222.5, 227.3, 232.1, 236.9, 241.9, 246.8, 252];
+             
+             [~, deviceResponse] = self.getParameters;
+             ePulse = energyPowerTable(deviceResponse.PowerA + 1);
+             
+            deviceResponse = (numberOfPulses* (frequency*ePulse -1050))/1050*frequency; 
+            if deviceResponse<0.5
+                warning('Your input parameters result in a minimum wait time less tha 500ms');
+                warning('The Rapid will enforce a 500ms minimum wait time and does not allow train parameters to be changed during this time.');
+            end
+            errorOrSuccess = 0;
+                       
+        end
     end
     
     methods (Access = 'protected')
