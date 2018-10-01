@@ -14,6 +14,7 @@ classdef magstim < handle
         port =[];
         connected = 0; %Default value of connected set to 0 to make sure the user connects the port
         communicationTimer = [];
+        armedOrnot = 0;
     end
     
     methods 
@@ -136,7 +137,7 @@ classdef magstim < handle
             %% Create Control Command
             
             [errorOrSuccess, deviceResponse] = self.processCommand(['@' sprintf('%03s',num2str(power))], getResponse, 3);
-
+            self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
             end
         
         function [errorOrSuccess, deviceResponse] = arm(self, varargin)
@@ -150,6 +151,10 @@ classdef magstim < handle
             % device to the port indicating current information about the device
             % errorOrsuccess: is a boolean value indicating succecc = 0 or error = 1
             % in performing the desired task
+            
+            if self.armedOrnot ==1
+                warning('Device is already armed');
+            else
 
             %% Check Input Validity:
             if nargin < 1
@@ -168,8 +173,10 @@ classdef magstim < handle
             end
 
             %% Create Control Command
-            [errorOrSuccess, deviceResponse] =  self.processCommand('EB', getResponse, 3);          
+            [errorOrSuccess, deviceResponse] =  self.processCommand('EB', getResponse, 3); 
+            self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
             end
+        end
         
         function [errorOrSuccess, deviceResponse] = disarm(self, varargin)
             % Inputs:
@@ -201,6 +208,7 @@ classdef magstim < handle
             end
             %% Create Control Command
             [errorOrSuccess, deviceResponse] =  self.processCommand('EA' ,getResponse, 3);
+            self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
             end
         
         function [errorOrSuccess, deviceResponse] = fire(self, varargin)
@@ -232,6 +240,7 @@ classdef magstim < handle
             end
             %% Create Control Command       
             [errorOrSuccess, deviceResponse] =  self.processCommand('EH', getResponse, 3);
+            self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
             end
        
         function [errorOrSuccess, deviceResponse] = remoteControl(self, enable, varargin)
@@ -278,6 +287,7 @@ classdef magstim < handle
             end
             
             [errorOrSuccess, deviceResponse] =  self.processCommand(commandString, getResponse, 3);
+            self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
             if ~errorOrSuccess
                 self.connected = enable;
                 if enable
@@ -302,6 +312,7 @@ classdef magstim < handle
           
         %% Create Control Command
         [errorOrSuccess, deviceResponse] =  self.processCommand('J@', true, 12);
+        self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
         end
         
         function [errorOrsuccess, DeviceResponse] = getTemperature(self)  
@@ -318,6 +329,7 @@ classdef magstim < handle
             
             %% Create Control Command
             [errorOrsuccess, DeviceResponse] =  self.processCommand('F@', true, 9);
+            self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
         end
         
         function poke(self, loud)
