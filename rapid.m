@@ -16,22 +16,15 @@ classdef rapid < magstim & handle
         version = [];
         controlCommand = '';
         controlBytes;
-        armedOrnot = 0;
     end
     
     methods
     	function self = rapid(PortID, rapidType, varargin)
-            if nargin < 1
-                error('Not Enough Input Arguments');
-            end
+            narginchk(1,3)
             if nargin < 2
                 rapidType = 'rapid';
-            end
-            if ~ismember(lower(rapidType),['rapid','super','superplus'])
+            elseif ~ismember(lower(rapidType),['rapid','super','superplus'])
                 error('rapidType Must Be ''Rapid'', ''Super'', or ''SuperPlus''.')
-            end
-            if length(varargin) > 1
-                error('Too Many Input Arguments');
             end
             self = self@magstim(PortID);
             self.rapidType = lower(rapidType);
@@ -54,30 +47,18 @@ classdef rapid < magstim & handle
             % in performing the desired task
 
             %% Check Input Validity:
-            if nargin < 2
-                error('Not Enough Input Arguments');
-            end
-            if nargin < 3
-                getResponse = false ; %Default Value Set To 0
+            narginchk(2, 3);
+            getResponse = magstim.checkForResponseRequest(varargin);
+            if self.enhancedPowerMode
+                maxPower = 110;
             else
-                getResponse = varargin{1};
+                maxPower = 100;
             end
-            if (getResponse ~= 0 && getResponse ~= 1 )
-                error('getResponse Must Be A Boolean');
-            end
-            if ~(isnumeric(power))|| rem(power,1)~=0
-                error('power Must Be A Whole Number');
-            end
-            if (power < 0 || ((power > 100) && (self.enhancedPowerMode == 0)) || power > 110)
-                error('power Must Be A Positive Value Less Than Or Equal To 100 (or 110 if Enhanced Power Mode activated)');
-            end             
-            if length(power) > 1
-                error('Invaid Power Amplitude. It Must Be A Single Numeric');
-            end
+            magstim.checkIntegerInput('Power', power, 0, maxPower);
             
             %% Create Control Command           
-            [errorOrSuccess, deviceResponse] = self.processCommand(['@' sprintf('%03s',num2str(power))], getResponse, 3);
-             self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
+            [errorOrSuccess, deviceResponse] = self.processCommand(['@' sprintf('%03s', num2str(power))], getResponse, 3);
+            self.armedStatus = deviceResponse.InstrumentStatus.Armed;
         end
          
         function [errorOrSuccess, deviceResponse] = setTrain(self, trainParameters , varargin)
@@ -97,21 +78,8 @@ classdef rapid < magstim & handle
             % in performing the desired task
             
             %% Check Input Validity:
-            if nargin < 2
-                 error('Not Enough Input Arguments');
-            end
-            if length(varargin) > 1
-                error('Too Many Input Arguments');
-            end
-            if nargin < 3
-                getResponse = false ; %Default Value Set To 0
-            else
-                getResponse = varargin{1};
-            end
-            if (getResponse ~= 0 && getResponse ~= 1)
-                   error('getResponse Must Be A Boolean');
-            end
-            
+            narginchk(2, 3);
+            getResponse = magstim.checkForResponseRequest(varargin);
             if ~isempty(trainParameters.frequency)
                 frequency = trainParameters.frequency;
             else
@@ -281,7 +249,7 @@ classdef rapid < magstim & handle
                     padding = '%04s';
                 end
               [errorOrSuccess, deviceResponse] = self.processCommand(['D' sprintf(padding,num2str(numberOfPulses))], getResponse, 4);
-              self.armedOrnot = deviceResponse.InstrumentStatus.Armed;                               
+              self.armedStatus = deviceResponse.InstrumentStatus.Armed;                               
         end
         
         
@@ -300,22 +268,10 @@ classdef rapid < magstim & handle
             % in performing the desired task
             
             %% Check Input Validity:
-            if nargin < 2
-            	error('Not Enough Input Arguments');
-            end
-            if length(varargin) > 1
-                error('Too Many Input Arguments');
-            end
-            if nargin < 3
-                getResponse = false; %Default Value Set To 0
-            else
-                getResponse = varargin{1};
-            end
-            if (getResponse ~= 0 && getResponse ~= 1)
-            	error('getResponse Must Be A Boolean');
-            end
-            if (enable ~= 0 && enable ~= 1)
-            	error('enable Must Be A Boolean');
+            narginchk(2, 3);
+            getResponse = magstim.checkForResponseRequest(varargin);
+            if ~ismember(enable, [0 1])
+                error('enable Must Be A Boolean');
             end
            
             %% Create Control Command 
@@ -326,7 +282,7 @@ classdef rapid < magstim & handle
             end
                
             [errorOrSuccess, deviceResponse] =  self.processCommand(commandString, getResponse, 4);
-            self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
+            self.armedStatus = deviceResponse.InstrumentStatus.Armed;
         end
           
         function [errorOrSuccess, deviceResponse] = ignoreCoilSafetyInterlock(self, varargin)
@@ -342,24 +298,12 @@ classdef rapid < magstim & handle
             % in performing the desired task
             
             %% Check Input Validity:
-            if nargin < 1
-            	error('Not Enough Input Arguments');
-            end
-            if length(varargin) > 1
-                error('Too Many Input Arguments');
-            end
-            if nargin < 2
-                getResponse = false ; %Default Value Set To 0
-            else
-                getResponse = varargin{1};
-            end
-            if (getResponse ~= 0 && getResponse ~= 1)
-            	error('getResponse Must Be A Boolean');
-            end
+            narginchk(1, 2);
+            getResponse = magstim.checkForResponseRequest(varargin);
            
             %% Create Control Command 
             [errorOrSuccess, deviceResponse] =  self.processCommand('b@', getResponse, 3);
-            self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
+            self.armedStatus = deviceResponse.InstrumentStatus.Armed;
         end
           
         
@@ -378,22 +322,10 @@ classdef rapid < magstim & handle
             % in performing the desired task
             
             %% Check Input Validity:
-            if nargin < 2
-                error('Not Enough Input Arguments');
-            end
-            if length(varargin) > 1
-                error('Too Many Input Arguments');
-            end
-            if nargin < 3
-                getResponse = false ; %Default Value Set To 0
-            else
-                getResponse = varargin{1};
-            end
-            if (getResponse ~= 0 && getResponse ~= 1)
-            	error('getResponse Must Be A Boolean');
-            end
-            if (enable ~= 0 && enable ~= 1 )
-            	error('enable Must Be A Boolean');
+            narginchk(2, 3);
+            getResponse = magstim.checkForResponseRequest(varargin);
+            if ~ismember(enable, [0 1])
+                error('enable Must Be A Boolean');
             end
             
             %% Create Control Command
@@ -404,10 +336,10 @@ classdef rapid < magstim & handle
             end
             if enable
                 [errorOrSuccess, deviceResponse] = self.processCommand(['[' sprintf(padding,'10')], getResponse, 4);
-                self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
+                self.armedStatus = deviceResponse.InstrumentStatus.Armed;
             else
                 [errorOrSuccess, deviceResponse] = self.processCommand(['[' sprintf(padding,'00')], getResponse, 4);
-                self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
+                self.armedStatus = deviceResponse.InstrumentStatus.Armed;
             end
             
         end
@@ -420,9 +352,7 @@ classdef rapid < magstim & handle
             % in performing the desired task
             
             %% Check Input Validity
-            if nargin < 1
-            	error('Not Enough Input Arguments');
-            end
+            narginchk(1, 1);
           
             %% Create Control Command 
             if self.version{1} >= 9
@@ -433,7 +363,7 @@ classdef rapid < magstim & handle
                 returnBytes = 21;
             end
             [errorOrSuccess, deviceResponse] =  self.processCommand('\@', true, returnBytes);
-            self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
+            self.armedStatus = deviceResponse.InstrumentStatus.Armed;
         end
            
         %% Get Version
@@ -462,22 +392,10 @@ classdef rapid < magstim & handle
             % in performing the desired task
             
             %% Check Input Validity
-            if nargin < 2
-            	error('Not Enough Input Arguments');
-            end
-            if length(varargin) > 1
-            	error('Too Many Input Arguments');
-            end
-            if nargin < 3
-            	getResponse = false;
-            else
-            	getResponse = varargin{1};
-            end
-            if (enable ~= 0 && enable ~= 1 )
+            narginchk(2, 3);
+            getResponse = magstim.checkForResponseRequest(varargin);
+            if ~ismember(enable, [0 1])
                 error('enable Must Be A Boolean');
-            end
-            if (getResponse ~= 0 && getResponse ~= 1 )
-                error('getResponse Must Be A Boolean');
             end
            
             %% Create Control Command
@@ -496,7 +414,7 @@ classdef rapid < magstim & handle
             % Keep a record of if we're connecting for the first time
             alreadyConnected = self.connected;
             [errorOrSuccess, deviceResponse] =  self.processCommand(commandString, getResponse, 3);
-            self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
+            self.armedStatus = deviceResponse.InstrumentStatus.Armed;
             if ~errorOrSuccess
                 self.connected = enable;
                 if enable
@@ -529,15 +447,12 @@ classdef rapid < magstim & handle
         
         %% Get System Status
         function [errorOrSuccess, deviceResponse] = getSystemStatus(self)
-            if nargin < 1
-            	error('Not Enough Input Arguments');
-            elseif nargin > 1
-                error('Too Many Input Arguments');
-            end
+            %% Check Input Validity
+            narginchk(1, 1);
             %% Create Control Command
             if self.version{1} >= 9
                 [errorOrSuccess, deviceResponse] =  self.processCommand('x@', true, 6);
-                self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
+                self.armedStatus = deviceResponse.InstrumentStatus.Armed;
             else
                 errorOrSuccess = 7;
                 deviceResponse = 'This command is unavailable on your device';
@@ -546,14 +461,11 @@ classdef rapid < magstim & handle
 
         %% Get Error Code
         function [errorOrSuccess, deviceResponse] = getErrorCode(self)
-            if nargin < 1
-            	error('Not Enough Input Arguments');
-            elseif nargin > 1
-                error('Too Many Input Arguments');
-            end
+            %% Check Input Validity
+            narginchk(1, 1);
             %% Create Control Command
         	[errorOrSuccess, deviceResponse] = self.processCommand('I@', true, 6);
-            self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
+            self.armedStatus = deviceResponse.InstrumentStatus.Armed;
         end
 
         %% Set Charge Delay
@@ -570,29 +482,9 @@ classdef rapid < magstim & handle
             % errorOrSuccess: is a boolean value indicating success = 0 or error = 1
             % in performing the desired task
             %% Check Input Validity:
-            if nargin < 2
-            	error('Not Enough Input Arguments');
-            end
-            if length(varargin) > 1
-                error('Too Many Input Arguments');
-            end
-            if nargin < 3
-                getResponse = false ; %Default Value Set To 0
-            else
-                getResponse = varargin{1};
-            end
-            if (getResponse ~= 0 && getResponse ~= 1)
-            	error('getResponse Must Be A Boolean');
-            end
-            if ~(isnumeric(chargeDelay)) || rem(chargeDelay,1)~=0
-                error('The chargeDelay Must Be A Number');
-            end
-            if (chargeDelay < 0)
-                error('chargeDelay Must Be A Positive Value');
-            end
-            if length(chargeDelay) > 1
-                error('Invaid chargeDelay. It Must Be A Single Numeric');
-            end            
+            narginchk(2, 3);
+            getResponse = magstim.checkForResponseRequest(varargin);
+            magstim.checkIntegerInput('Charge Delay', chargeDelay, 0, Inf);           
             %% Create Control Command
             if self.version{1} >= 9
                 if self.version{1} >= 10
@@ -607,7 +499,7 @@ classdef rapid < magstim & handle
                     padding = '%04s';
                 end
                 [errorOrSuccess, deviceResponse] = self.processCommand(['n' sprintf(padding,num2str(chargeDelay))], getResponse, 3);
-                self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
+                self.armedStatus = deviceResponse.InstrumentStatus.Armed;
             else
                 errorOrSuccess = 7;
                 deviceResponse = 'This command is unavailable on your device';
@@ -616,11 +508,8 @@ classdef rapid < magstim & handle
         
         %% Get Charge Delay
         function [errorOrSuccess, deviceResponse] = getChargeDelay(self)
-            if nargin < 1
-            	error('Not Enough Input Arguments');
-            elseif nargin > 1
-                error('Too Many Input Arguments');
-            end            
+            %% Check Input Validity
+            narginchk(1, 1);          
             %% Create Control Command
             if self.version{1} >= 9
                 if self.version{1} >= 10
@@ -629,7 +518,7 @@ classdef rapid < magstim & handle
                     returnBytes = 6;
                 end
                 [errorOrSuccess, deviceResponse] =  self.processCommand('o@', true, returnBytes);
-                self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
+                self.armedStatus = deviceResponse.InstrumentStatus.Armed;
             else
                 errorOrSuccess = 7;
                 deviceResponse = 'This command is unavailable on your device';
@@ -735,5 +624,4 @@ classdef rapid < magstim & handle
             end
         end
     end
-    
 end
