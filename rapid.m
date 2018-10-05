@@ -89,10 +89,10 @@ classdef rapid < magstim & handle
             % device to the port indicating current information about the device
             % errorOrSuccess: is a boolean value indicating succecc = 0 or error = 1
             % in performing the desired task
-			min_nPulses = 1;
-			min_duration = 0.1;
-			min_frequency = 0.1;
-			max_frequency = 100;
+            min_nPulses = 1;
+            min_duration = 0.1;
+            min_frequency = 0.1;
+            max_frequency = 100;
             if self.version{1} >= 9
                 max_nPulses = 6000;
                 max_duration = 100;
