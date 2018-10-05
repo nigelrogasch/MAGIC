@@ -89,10 +89,10 @@ classdef rapid < magstim & handle
             % device to the port indicating current information about the device
             % errorOrSuccess: is a boolean value indicating succecc = 0 or error = 1
             % in performing the desired task
-			min_nPulses = 1;
-			min_duration = 0.1;
-			min_frequency = 0.1;
-			max_frequency = 100;
+            min_nPulses = 1;
+            min_duration = 0.1;
+            min_frequency = 0.1;
+            max_frequency = 100;
             if version{1} >= 9
                 max_nPulses = 6000;
                 max_duration = 100;
@@ -124,22 +124,22 @@ classdef rapid < magstim & handle
 
             if isempty(trainParameters.duration)
                 trainParameters.duration = round((trainParameters.nPulses / trainParameters.frequency), 1);
-				if (trainParameters.duration < min_duration) || (trainParameters.duration > max_duration)
-					error('Derived duration of %s seconds from provided nPulses (%s pulses) and frequency (%s Hz). This is outside the allowed range of %s to %s.',...
-						  trainParameters.duration, trainParameters.nPulses, trainParameters.frequency, min_duration, max_duration);
-				end
+                if (trainParameters.duration < min_duration) || (trainParameters.duration > max_duration)
+                    error('Derived duration of %s seconds from provided nPulses (%s pulses) and frequency (%s Hz). This is outside the allowed range of %s to %s.',...
+                          trainParameters.duration, trainParameters.nPulses, trainParameters.frequency, min_duration, max_duration);
+                end
             elseif isempty(trainParameters.nPulses)
                 trainParameters.nPulses = floor(trainParameters.duration * trainParameters.frequency);
-				if (trainParameters.nPulses < min_nPulses) || (trainParameters.nPulses > max_nPulses)
-					error('Derived nPulses of %s pulses from provided duration (%s seconds) and frequency (%s Hz). This is outside the allowed range of %s to %s.',...
-						  trainParameters.nPulses, trainParameters.duration, trainParameters.frequency, min_nPulses, max_nPulses);
-				end                
+                if (trainParameters.nPulses < min_nPulses) || (trainParameters.nPulses > max_nPulses)
+                    error('Derived nPulses of %s pulses from provided duration (%s seconds) and frequency (%s Hz). This is outside the allowed range of %s to %s.',...
+                          trainParameters.nPulses, trainParameters.duration, trainParameters.frequency, min_nPulses, max_nPulses);
+                end                
             elseif isempty(trainParameters.frequency)
                 trainParameters.frequency = round((trainParameters.nPulses / trainParameters.duration), 1);
-				if (trainParameters.frequency < min_frequency) || (trainParameters.frequency > max_frequency)
-					error('Derived frequency of %s Hz from provided duration (%s seconds) and nPulses (%s pulses). This is outside the allowed range of %s to %s.',...
-						  trainParameters.frequency, trainParameters.duration, trainParameters.nPulses, min_frequency, max_frequency);
-				end 
+                if (trainParameters.frequency < min_frequency) || (trainParameters.frequency > max_frequency)
+                    error('Derived frequency of %s Hz from provided duration (%s seconds) and nPulses (%s pulses). This is outside the allowed range of %s to %s.',...
+                          trainParameters.frequency, trainParameters.duration, trainParameters.nPulses, min_frequency, max_frequency);
+                end 
             end
             
             %if trainParameters.frequency > 60
