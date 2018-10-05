@@ -60,10 +60,7 @@ classdef bistim < magstim &handle
             getResponse = magstim.checkForResponseRequest(varargin);
             if self.highRes == 1 % Device already set to highRes Mode
                 magstim.checkNumericInput('IPI', ipi, 0, 99.9);
-                ipi = ipi * 10;
-                if ~mod(ipi, 1)
-                    error('ipi Can Have Up To Just A Single Decimal Place In High Resolution Mode');
-                end
+                ipi = round(ipi * 10);
             else % Assume not in highRes mode
                 magstim.checkIntegerInput('IPI', ipi, 0, 999);
            end
