@@ -71,7 +71,6 @@ classdef rapid < magstim & handle
 
             %% Create Control Command           
             [errorOrSuccess, deviceResponse] = self.processCommand(['@' sprintf('%03s', num2str(power))], getResponse, 3);
-            self.armedStatus = deviceResponse.InstrumentStatus.Armed;
         end
 
         function [errorOrSuccess, deviceResponse] = setTrain(self, trainParameters , varargin)
@@ -89,10 +88,10 @@ classdef rapid < magstim & handle
             % device to the port indicating current information about the device
             % errorOrSuccess: is a boolean value indicating succecc = 0 or error = 1
             % in performing the desired task
-            min_nPulses = 1;
-            min_duration = 0.1;
-            min_frequency = 0.1;
-            max_frequency = 100;
+			min_nPulses = 1;
+			min_duration = 0.1;
+			min_frequency = 0.1;
+			max_frequency = 100;
             if self.version{1} >= 9
                 max_nPulses = 6000;
                 max_duration = 100;
@@ -166,8 +165,7 @@ classdef rapid < magstim & handle
             self.processCommand(['[' sprintf(duration_padding, num2str(trainParameters.duration))], getResponse, 4);
 
             %3. Number Of Pulses
-            [errorOrSuccess, deviceResponse] = self.processCommand(['D' sprintf(nPulses_padding, num2str(trainParameters.nPulses))], getResponse, 4);
-            self.armedStatus = deviceResponse.InstrumentStatus.Armed;                               
+            [errorOrSuccess, deviceResponse] = self.processCommand(['D' sprintf(nPulses_padding, num2str(trainParameters.nPulses))], getResponse, 4);                              
         end
 
         function [errorOrSuccess, deviceResponse] = enhancedPowerMode(self, enable, varargin)
@@ -199,7 +197,6 @@ classdef rapid < magstim & handle
             end
 
             [errorOrSuccess, deviceResponse] =  self.processCommand(commandString, getResponse, 4);
-            self.armedStatus = deviceResponse.InstrumentStatus.Armed;
         end
 
         function [errorOrSuccess, deviceResponse] = ignoreCoilSafetyInterlock(self, varargin)
@@ -220,7 +217,6 @@ classdef rapid < magstim & handle
 
             %% Create Control Command 
             [errorOrSuccess, deviceResponse] =  self.processCommand('b@', getResponse, 3);
-            self.armedStatus = deviceResponse.InstrumentStatus.Armed;
         end
 
 
@@ -253,10 +249,8 @@ classdef rapid < magstim & handle
             end
             if enable
                 [errorOrSuccess, deviceResponse] = self.processCommand(['[' sprintf(padding,'10')], getResponse, 4);
-                self.armedStatus = deviceResponse.InstrumentStatus.Armed;
             else
                 [errorOrSuccess, deviceResponse] = self.processCommand(['[' sprintf(padding,'00')], getResponse, 4);
-                self.armedStatus = deviceResponse.InstrumentStatus.Armed;
             end
 
         end
@@ -280,7 +274,6 @@ classdef rapid < magstim & handle
                 returnBytes = 21;
             end
             [errorOrSuccess, deviceResponse] =  self.processCommand('\@', true, returnBytes);
-            self.armedStatus = deviceResponse.InstrumentStatus.Armed;
         end
 
         %% Get Version
@@ -331,7 +324,6 @@ classdef rapid < magstim & handle
             % Keep a record of if we're connecting for the first time
             alreadyConnected = self.connected;
             [errorOrSuccess, deviceResponse] =  self.processCommand(commandString, getResponse, 3);
-            self.armedStatus = deviceResponse.InstrumentStatus.Armed;
             if ~errorOrSuccess
                 self.connected = enable;
                 if enable
@@ -369,7 +361,6 @@ classdef rapid < magstim & handle
             %% Create Control Command
             if self.version{1} >= 9
                 [errorOrSuccess, deviceResponse] =  self.processCommand('x@', true, 6);
-                self.armedStatus = deviceResponse.InstrumentStatus.Armed;
             else
                 errorOrSuccess = 7;
                 deviceResponse = 'This command is unavailable with your device version.';
@@ -382,7 +373,6 @@ classdef rapid < magstim & handle
             narginchk(1, 1);
             %% Create Control Command
             [errorOrSuccess, deviceResponse] = self.processCommand('I@', true, 6);
-            self.armedStatus = deviceResponse.InstrumentStatus.Armed;
         end
 
         %% Set Charge Delay
@@ -416,7 +406,6 @@ classdef rapid < magstim & handle
                     padding = '%04s';
                 end
                 [errorOrSuccess, deviceResponse] = self.processCommand(['n' sprintf(padding,num2str(chargeDelay))], getResponse, 3);
-                self.armedStatus = deviceResponse.InstrumentStatus.Armed;
             else
                 errorOrSuccess = 7;
                 deviceResponse = 'This command is unavailable with your device version.';
@@ -435,7 +424,6 @@ classdef rapid < magstim & handle
                     returnBytes = 6;
                 end
                 [errorOrSuccess, deviceResponse] =  self.processCommand('o@', true, returnBytes);
-                self.armedStatus = deviceResponse.InstrumentStatus.Armed;
             else
                 errorOrSuccess = 7;
                 deviceResponse = 'This command is unavailable with your device version.';
