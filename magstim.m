@@ -103,7 +103,7 @@ classdef magstim < handle
             % Outputs:
             % DeviceResponse: is the response that is sent back by the
             % device to the port indicating current information about the device
-            % errorOrsuccess: is a boolean value indicating succecc = 0 or error = 1
+            % errorOrsuccess: is a boolean value indicating success = 0 or error = 1
             % in performing the desired task
 
             %% Check Input Validity:
@@ -124,7 +124,7 @@ classdef magstim < handle
             % Outputs:
             % DeviceResponse: is the response that is sent back by the
             % device to the port indicating current information about the device
-            % errorOrsuccess: is a boolean value indicating succecc = 0 or error = 1
+            % errorOrsuccess: is a boolean value indicating success = 0 or error = 1
             % in performing the desired task
             
             if self.armedStatus == 1
@@ -135,7 +135,10 @@ classdef magstim < handle
                 getResponse = magstim.checkForResponseRequest(varargin);
 
                 %% Create Control Command
-                [errorOrSuccess, deviceResponse] =  self.processCommand('EB', getResponse, 3); 
+                [errorOrSuccess, deviceResponse] =  self.processCommand('EB', getResponse, 3);
+                if ~errorOrSuccess
+                    self.armedStatus = 1;
+                end
             end
         end
         
@@ -148,7 +151,7 @@ classdef magstim < handle
             % Outputs:
             % DeviceResponse: is the response that is sent back by the
             % device to the port indicating current information about the device
-            % errorOrsuccess: is a boolean value indicating succecc = 0 or error = 1
+            % errorOrsuccess: is a boolean value indicating success = 0 or error = 1
             % in performing the desired task
 
             %% Check Input Validity:
@@ -157,6 +160,9 @@ classdef magstim < handle
 
             %% Create Control Command
             [errorOrSuccess, deviceResponse] =  self.processCommand('EA' ,getResponse, 3);
+            if ~errorOrSuccess
+                self.armedStatus = 0;
+            end
         end
         
         function [errorOrSuccess, deviceResponse] = fire(self, varargin)
@@ -168,7 +174,7 @@ classdef magstim < handle
             % Outputs:
             % DeviceResponse: is the response that is sent back by the
             % device to the port indicating current information about the device
-            % errorOrsuccess: is a boolean value indicating succecc = 0 or error = 1
+            % errorOrsuccess: is a boolean value indicating success = 0 or error = 1
             % in performing the desired task
 
             %% Check Input Validity
@@ -190,7 +196,7 @@ classdef magstim < handle
             % Outputs:
             % deviceResponse: is the response that is sent back by the
             % device to the port indicating current information about the device
-            % errorOrSuccess: is a boolean value indicating succecc = 0 or error = 1
+            % errorOrSuccess: is a boolean value indicating success = 0 or error = 1
             % in performing the desired task
             
             %% Check Input Validity
@@ -224,7 +230,7 @@ classdef magstim < handle
             % Outputs:
             % DeviceResponse: is the response that is sent back by the
             % device to the port indicating current information about the device
-            % errorOrsuccess: is a boolean value indicating succecc = 0 or error = 1
+            % errorOrsuccess: is a boolean value indicating success = 0 or error = 1
             % in performing the desired task
 
             %% Check Input Validity
@@ -238,7 +244,7 @@ classdef magstim < handle
             % Outputs:
             % DeviceResponse: is the response that is sent back by the
             % device to the port indicating current information about the device
-            % errorOrsuccess: is a boolean value indicating succecc = 0 or error = 1
+            % errorOrsuccess: is a boolean value indicating success = 0 or error = 1
             % in performing the desired task
             
             %% Check Input Validity
@@ -373,7 +379,7 @@ classdef magstim < handle
                     % Creating Output
                     errorOrSuccess = 0;
                     deviceResponse = self.parseResponse(commandAcknowledge, readData);
-                    self.armedStatus = deviceResponse.InstrumentStatus.Armed;
+                    self.armedStatus = deviceResponse.InstrumentStatus.Armed || deviceResponse.InstrumentStatus.Ready;
                     if ~getResponse
                         deviceResponse = [];
                     end
