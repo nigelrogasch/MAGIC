@@ -145,7 +145,7 @@ classdef rapid < magstim & handle
             %    warning('Maximum stimulation frequency is 60 Hz for 115V areas.');
             %end
             
-            [errorOrSuccess, deviceResponse] = self.getParameters;
+            [errorOrSuccess, deviceResponse] = self.getParameters();
             if errorOrSuccess
                 ePulse = rapid.energyPowerTable(deviceResponse.PowerA + 1);
                 if trainParameters.duration > (63000 / (ePulse * trainParameters.frequency))
@@ -273,7 +273,7 @@ classdef rapid < magstim & handle
             else
                 returnBytes = 21;
             end
-            [errorOrSuccess, deviceResponse] =  self.processCommand('\@', true, returnBytes);
+            [errorOrSuccess, deviceResponse] =  self.processCommand('\\@', true, returnBytes);
         end
 
         %% Get Version
@@ -394,15 +394,18 @@ classdef rapid < magstim & handle
             magstim.checkIntegerInput('Charge Delay', chargeDelay, 0, Inf);           
             %% Create Control Command
             if self.version{1} >= 9
+                if chargeDelay < 0
+                    error('Minimum chargeDelay is 0 ms.');
+                end
                 if self.version{1} >= 10
-                    %if chargeDelay > 10000
-                    %    error('Maximum chargeDelay is 10000 ms.');
-                    %end
+                    if chargeDelay > 10000
+                        error('Maximum chargeDelay is 10000 ms.');
+                    end
                     padding = '%05s';
                 else
-                    %if chargeDelay > 2000
-                    %    error('Maximum chargeDelay is 2000 ms.');
-                    %end
+                    if chargeDelay > 2000
+                        error('Maximum chargeDelay is 2000 ms.');
+                    end
                     padding = '%04s';
                 end
                 [errorOrSuccess, deviceResponse] = self.processCommand(['n' sprintf(padding,num2str(chargeDelay))], getResponse, 3);
