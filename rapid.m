@@ -408,7 +408,7 @@ classdef rapid < magstim & handle
                     end
                     padding = '%04s';
                 end
-                [errorOrSuccess, deviceResponse] = self.processCommand(['n' sprintf(padding,num2str(chargeDelay))], getResponse, 3);
+                [errorOrSuccess, deviceResponse] = self.processCommand(['n' sprintf(padding,num2str(chargeDelay))], getResponse, 4);
             else
                 errorOrSuccess = 7;
                 deviceResponse = 'This command is unavailable with your device version.';
@@ -422,9 +422,9 @@ classdef rapid < magstim & handle
             %% Create Control Command
             if self.version{1} >= 9
                 if self.version{1} >= 10
-                    returnBytes = 7;
+                    returnBytes = 8;
                 else
-                    returnBytes = 6;
+                    returnBytes = 7;
                 end
                 [errorOrSuccess, deviceResponse] =  self.processCommand('o@', true, returnBytes);
             else
@@ -497,7 +497,7 @@ classdef rapid < magstim & handle
                     info.SystemStatus = struct('Plus1ModuleDetected',      statusCode(1),...
                                                'SpecialTriggerModeActive', statusCode(2),...
                                                'ChargeDelaySet',           statusCode(3));
-                elseif command == '0'  %getChargeDelay
+                elseif command == 'o'  %getChargeDelay
                     if self.version{1} >= 10
                         info.ChargeDelay = str2double(char(readData(2:5)));
                     else
