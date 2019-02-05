@@ -62,7 +62,7 @@ classdef rapid < magstim & handle
             %% Check Input Validity:
             narginchk(2, 3);
             getResponse = magstim.checkForResponseRequest(varargin);
-            if self.enhancedPowerMode
+            if self.enhancedPowerModeStatus
                 maxPower = 110;
             else
                 maxPower = 100;
@@ -273,7 +273,7 @@ classdef rapid < magstim & handle
             else
                 returnBytes = 21;
             end
-            [errorOrSuccess, deviceResponse] =  self.processCommand('\\@', true, returnBytes);
+            [errorOrSuccess, deviceResponse] =  self.processCommand('\@', true, returnBytes);
         end
 
         %% Get Version
@@ -458,7 +458,7 @@ classdef rapid < magstim & handle
                                                         'ErrorType',           statusCode(7),...
                                                         'RemoteControlStatus', statusCode(8)));
                 %% Is Rapid Status Returned With This Command?
-                if ismember(command,['\', '[', 'D', 'B', '^', '_', 'x'])
+                if ismember(command,['\', '[', 'D', 'B', '^', '_', 'x', 'n'])
                     statusCode = bitget(double(readData(2)),1:8);
                     info.RapidStatus = struct('EnhancedPowerMode',     statusCode(1),...
                                               'Train',                 statusCode(2),...
@@ -499,9 +499,9 @@ classdef rapid < magstim & handle
                                                'ChargeDelaySet',           statusCode(3));
                 elseif command == 'o'  %getChargeDelay
                     if self.version{1} >= 10
-                        info.ChargeDelay = str2double(char(readData(2:5)));
+                        info.ChargeDelay = str2double(char(readData(2:6)));
                     else
-                        info.ChargeDelay = str2double(char(readData(2:4)));
+                        info.ChargeDelay = str2double(char(readData(2:5)));
                     end
                 end
             end
