@@ -371,7 +371,7 @@ classdef magstim < handle
                 disp(['Data: ' num2str(reply')]); %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                 if self.port.BytesAvailable %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                     reply = fread(self.port, bytesExpected - 1); %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                    disp(['Found additional data in serial port: ' reply]); %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                    disp(['Found additional data in serial port: ' num2str(reply')]); %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                 end %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                 if length(readData) < (bytesExpected - 1)
                     errorOrSuccess = 3;
