@@ -81,7 +81,7 @@ classdef magstim < handle
             %% Close The Port
             if ~isempty(self.port) && strcmp(self.port.Status, 'open')
                 % If connected, disarm and tell magstim we're relinquishing control
-                if self.connected == 1
+                if self.connected
                     [~, deviceResponse]= self.remoteControl(0, 1);
                 end
                 fclose(self.port);
@@ -103,7 +103,7 @@ classdef magstim < handle
             % Outputs:
             % DeviceResponse: is the response that is sent back by the
             % device to the port indicating current information about the device
-            % errorOrsuccess: is a boolean value indicating success = 0 or error = 1
+            % errorOrSuccess: is a boolean value indicating success = 0 or error = 1
             % in performing the desired task
 
             %% Check Input Validity:
@@ -124,10 +124,10 @@ classdef magstim < handle
             % Outputs:
             % DeviceResponse: is the response that is sent back by the
             % device to the port indicating current information about the device
-            % errorOrsuccess: is a boolean value indicating success = 0 or error = 1
+            % errorOrSuccess: is a boolean value indicating success = 0 or error = 1
             % in performing the desired task
             
-            if self.armedStatus == 1
+            if self.armedStatus
                 warning('Device is already armed.');
             else
                 %% Check Input Validity:
@@ -151,7 +151,7 @@ classdef magstim < handle
             % Outputs:
             % DeviceResponse: is the response that is sent back by the
             % device to the port indicating current information about the device
-            % errorOrsuccess: is a boolean value indicating success = 0 or error = 1
+            % errorOrSuccess: is a boolean value indicating success = 0 or error = 1
             % in performing the desired task
 
             %% Check Input Validity:
@@ -174,7 +174,7 @@ classdef magstim < handle
             % Outputs:
             % DeviceResponse: is the response that is sent back by the
             % device to the port indicating current information about the device
-            % errorOrsuccess: is a boolean value indicating success = 0 or error = 1
+            % errorOrSuccess: is a boolean value indicating success = 0 or error = 1
             % in performing the desired task
 
             %% Check Input Validity
@@ -230,7 +230,7 @@ classdef magstim < handle
             % Outputs:
             % DeviceResponse: is the response that is sent back by the
             % device to the port indicating current information about the device
-            % errorOrsuccess: is a boolean value indicating success = 0 or error = 1
+            % errorOrSuccess: is a boolean value indicating success = 0 or error = 1
             % in performing the desired task
 
             %% Check Input Validity
@@ -240,18 +240,18 @@ classdef magstim < handle
             [errorOrSuccess, deviceResponse] =  self.processCommand('J@', true, 12);
         end
         
-        function [errorOrsuccess, DeviceResponse] = getTemperature(self)  
+        function [errorOrSuccess, DeviceResponse] = getTemperature(self)  
             % Outputs:
             % DeviceResponse: is the response that is sent back by the
             % device to the port indicating current information about the device
-            % errorOrsuccess: is a boolean value indicating success = 0 or error = 1
+            % errorOrSuccess: is a boolean value indicating success = 0 or error = 1
             % in performing the desired task
             
             %% Check Input Validity
             narginchk(1, 1);
             
             %% Create Control Command
-            [errorOrsuccess, DeviceResponse] =  self.processCommand('F@', true, 9);
+            [errorOrSuccess, DeviceResponse] =  self.processCommand('F@', true, 9);
         end
         
         function poke(self, loud)
@@ -265,7 +265,7 @@ classdef magstim < handle
             if nargin > 1
                 if ~ismember(loud,[0 1])
                     error('enable parameter must be Boolean.');
-                elseif loud == 1
+                elseif loud
                     self.remoteControl(1,0)
                 end
             end

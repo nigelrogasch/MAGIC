@@ -8,7 +8,7 @@
 % MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 % GNU General Public License for more details.
 
-classdef bistim < magstim &handle
+classdef bistim < magstim & handle
     properties (SetAccess = private)
         highRes = 0; %Bistim High Resolution Time Setting Mode
     end
@@ -30,7 +30,7 @@ classdef bistim < magstim &handle
             % Outputs:
             % deviceResponse: is the response that is sent back by the
             % device to the port indicating current information about the device
-            % errorOrsuccess: is a boolean value indicating succecc = 0 or error = 1
+            % errorOrSuccess: is a boolean value indicating success = 0 or error = 1
             % in performing the desired task
             
             %% Check Input Validity:
@@ -52,13 +52,13 @@ classdef bistim < magstim &handle
             % Outputs:
             % deviceResponse: is the response that is sent back by the
             % device to the port indicating current information about the device
-            % errorOrsuccess: is a boolean value indicating succecc = 0 or error = 1
+            % errorOrSuccess: is a boolean value indicating success = 0 or error = 1
             % in performing the desired task
             
             %% Check Input Validity:
-            narginchk(2, 4);
+            narginchk(2, 3);
             getResponse = magstim.checkForResponseRequest(varargin);
-            if self.highRes == 1 % Device already set to highRes Mode
+            if self.highRes % Device already set to highRes Mode
                 magstim.checkNumericInput('IPI', ipi, 0, 99.9);
                 ipi = round(ipi * 10);
             else % Assume not in highRes mode
@@ -69,7 +69,7 @@ classdef bistim < magstim &handle
             [errorOrSuccess, deviceResponse] = self.processCommand(['C' sprintf('%03s', num2str(ipi))], getResponse, 3);           
         end
         
-        function [errorOrsuccess, deviceResponse] = highResolutionMode(self, enable, varargin)
+        function [errorOrSuccess, deviceResponse] = highResolutionMode(self, enable, varargin)
             % Inputs:
             % enable<boolean> is a boolean that can be True(1) to
             % enable and False(0) to disable the High Resolution Time Setting Mode
@@ -80,7 +80,7 @@ classdef bistim < magstim &handle
             % Outputs:
             % DeviceResponse: is the response that is sent back by the
             % device to the port indicating current information about the device
-            % errorOrsuccess: is a boolean value indicating succecc = 0 or error = 1
+            % errorOrSuccess: is a boolean value indicating success = 0 or error = 1
             % in performing the desired task
             
             %% Check Input Validity
@@ -96,14 +96,17 @@ classdef bistim < magstim &handle
             else %Disable
                 commandString = 'Z@';                               
             end
-            [errorOrsuccess, deviceResponse] =  self.processCommand(commandString, getResponse, 3);
+            [errorOrSuccess, deviceResponse] =  self.processCommand(commandString, getResponse, 3);
+            if ~errorOrSuccess
+                self.highRes = enable;
+            end
         end
         
         function [errorOrSuccess, deviceResponse] = getParameters(self)  
             % Outputs:
             % DeviceResponse: is the response that is sent back by the
             % device to the port indicating current information about the device
-            % errorOrsuccess: is a boolean value indicating succecc = 0 or error = 1
+            % errorOrSuccess: is a boolean value indicating success = 0 or error = 1
             % in performing the desired task
 
             %% Check Input Validity

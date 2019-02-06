@@ -11,11 +11,11 @@
 classdef rapid < magstim & handle
     properties (SetAccess = private)
     	enhancedPowerModeStatus = 0; %Enhanced Power Setting Mode
-        rapidType
+        rapidType = [];
         unlockCode = [];
         version = [];
         controlCommand = '';
-        controlBytes;
+        controlBytes = [];
     end
     
     properties (Constant)
@@ -56,7 +56,7 @@ classdef rapid < magstim & handle
             % Outputs:
             % deviceResponse: is the response that is sent back by the
             % device to the port indicating current information about the device
-            % errorOrSuccess: is a boolean value indicating succecc = 0 or error = 1
+            % errorOrSuccess: is a boolean value indicating success = 0 or error = 1
             % in performing the desired task
 
             %% Check Input Validity:
@@ -86,7 +86,7 @@ classdef rapid < magstim & handle
             % Outputs:
             % deviceResponse: is the response that is sent back by the
             % device to the port indicating current information about the device
-            % errorOrSuccess: is a boolean value indicating succecc = 0 or error = 1
+            % errorOrSuccess: is a boolean value indicating success = 0 or error = 1
             % in performing the desired task
 			min_nPulses = 1;
 			min_duration = 0.1;
@@ -179,7 +179,7 @@ classdef rapid < magstim & handle
             % Outputs:
             % deviceResponse: is the response that is sent back by the
             % device to the port indicating current information about the device
-            % errorOrSuccess: is a boolean value indicating succecc = 0 or error = 1
+            % errorOrSuccess: is a boolean value indicating success = 0 or error = 1
             % in performing the desired task
 
             %% Check Input Validity:
@@ -197,6 +197,9 @@ classdef rapid < magstim & handle
             end
 
             [errorOrSuccess, deviceResponse] =  self.processCommand(commandString, getResponse, 4);
+            if ~errorOrSuccess
+                self.enhancedPowerModeStatus = enable;
+            end
         end
 
         function [errorOrSuccess, deviceResponse] = ignoreCoilSafetyInterlock(self, varargin)
@@ -208,7 +211,7 @@ classdef rapid < magstim & handle
             % Outputs:
             % deviceResponse: is the response that is sent back by the
             % device to the port indicating current information about the device
-            % errorOrSuccess: is a boolean value indicating succecc = 0 or error = 1
+            % errorOrSuccess: is a boolean value indicating success = 0 or error = 1
             % in performing the desired task
 
             %% Check Input Validity:
@@ -231,7 +234,7 @@ classdef rapid < magstim & handle
             % Outputs:
             % DeviceResponse: is the response that is sent back by the
             % device to the port indicating current information about the device
-            % errorOrsuccess: is a boolean value indicating succecc = 0 or error = 1
+            % errorOrSuccess: is a boolean value indicating success = 0 or error = 1
             % in performing the desired task
 
             %% Check Input Validity:
@@ -259,7 +262,7 @@ classdef rapid < magstim & handle
             % Outputs:
             % deviceResponse: is the response that is sent back by the
             % device to the port indicating current information about the device
-            % errorOrSuccess: is a boolean value indicating succecc = 0 or error = 1
+            % errorOrSuccess: is a boolean value indicating success = 0 or error = 1
             % in performing the desired task
 
             %% Check Input Validity
@@ -298,7 +301,7 @@ classdef rapid < magstim & handle
             % Outputs:
             % deviceResponse: is the response that is sent back by the
             % device to the port indicating current information about the device
-            % errorOrSuccess: is a boolean value indicating succecc = 0 or error = 1
+            % errorOrSuccess: is a boolean value indicating success = 0 or error = 1
             % in performing the desired task
 
             %% Check Input Validity
