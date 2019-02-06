@@ -63,7 +63,7 @@ classdef magstim < handle
                 fopen(self.port);
             end
             %% Try and Connect
-            [errorOrSuccess, deviceResponse] = self.remoteControl(1, 1);
+            [errorOrSuccess, deviceResponse] = self.remoteControl(true, true);
             if errorOrSuccess > 0
                 % Couldn't connect, so call disconnect to delete the
                 % connection. This will allow us to try again
@@ -82,7 +82,7 @@ classdef magstim < handle
             if ~isempty(self.port) && strcmp(self.port.Status, 'open')
                 % If connected, disarm and tell magstim we're relinquishing control
                 if self.connected
-                    [~, deviceResponse]= self.remoteControl(0, 1);
+                    [~, deviceResponse]= self.remoteControl(false, true);
                 end
                 fclose(self.port);
             end
@@ -373,15 +373,15 @@ classdef magstim < handle
                     reply = fread(self.port, bytesExpected - 1); %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                     disp(['Found additional data in serial port: ' num2str(reply')]); %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                 end %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                if length(readData) < (bytesExpected - 1)
-                    errorOrSuccess = 3;
-                    deviceResponse = 'Incomplete response from device.';
-                elseif strcmp(readData(1),'?')
+                if strcmp(readData(1),'?')
                     errorOrSuccess = 4;
                     deviceResponse = 'Supplied data value not acceptable.';
                 elseif strcmp(readData(1),'S')
                     errorOrSuccess = 5;
                     deviceResponse = 'Command conflicts with current device settings.';
+                elseif length(readData) < (bytesExpected - 1)
+                    errorOrSuccess = 3;
+                    deviceResponse = 'Incomplete response from device.';
                 elseif readData(end) ~= magstim.calcCRC([commandAcknowledge readData(1:end-1)'])
                     errorOrSuccess = 6;
                     deviceResponse = 'CRC does not match message contents.';

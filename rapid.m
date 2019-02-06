@@ -146,7 +146,7 @@ classdef rapid < magstim & handle
             %end
             
             [errorOrSuccess, deviceResponse] = self.getParameters();
-            if errorOrSuccess
+            if ~errorOrSuccess
                 ePulse = rapid.energyPowerTable(deviceResponse.PowerA + 1);
                 if trainParameters.duration > (63000 / (ePulse * trainParameters.frequency))
                     error('Duration exceeds maximum on time.');
