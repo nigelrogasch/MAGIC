@@ -339,12 +339,9 @@ classdef magstim < handle
                 
             %% Send the command string
             fprintf(self.port, [commandString magstim.calcCRC(commandString)]); 
-            disp(['Command sent: ' double([commandString magstim.calcCRC(commandString)])]); %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
             % Read the first character in the response from the stimulator
-            %commandAcknowledge = char(fread(self.port, 1));
-            reply = fread(self.port, 1); %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            commandAcknowledge = char(reply); %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            disp(['Command Acknowledge: ' num2str(reply)]); %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            commandAcknowledge = char(fread(self.port, 1));
             if isempty(commandAcknowledge)
                 errorOrSuccess = 1;
                 deviceResponse = 'No response detected from device.';
@@ -365,14 +362,7 @@ classdef magstim < handle
                 errorOrSuccess = 0;
                 deviceResponse = self.parseResponse(commandAcknowledge, readData);
             else 
-                %readData = char(fread(self.port, bytesExpected - 1));
-                reply = fread(self.port, bytesExpected - 1); %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                readData = char(reply); %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                disp(['Data: ' num2str(reply')]); %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                if self.port.BytesAvailable %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                    reply = fread(self.port, bytesExpected - 1); %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                    disp(['Found additional data in serial port: ' num2str(reply')]); %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                end %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                readData = char(fread(self.port, bytesExpected - 1));
                 if strcmp(readData(1),'?')
                     errorOrSuccess = 4;
                     deviceResponse = 'Supplied data value not acceptable.';
