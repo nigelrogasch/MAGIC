@@ -14,7 +14,7 @@ classdef magstim < handle
         port =[];
         connected = 0; %Default value of connected set to 0 to make sure the user connects the port
         communicationTimer = [];
-        armedOrnot = 0;
+        armedStatus = 0;
     end
     
     methods 
@@ -26,14 +26,12 @@ classdef magstim < handle
             listOfComPorts = foundPorts.AvailableSerialPorts;
             
             %% Check Input Validity:
-            if nargin < 1
-                error('Not Enough Input Arguments');
+            narginchk(1, 1);
+            if ~ischar(PortID) || (~isstring(PortID) && (numel(PortID) == 1))
+                error('The serial port ID must be a character or string array.');
             end
-            if ~(ischar(PortID))
-                error('The Serial Port ID Must Be a Character Array');
-            end
-            if ~any(strcmp(listOfComPorts,PortID))
-                error('Invalid Serial Com Port ID');
+            if ~any(strcmp(listOfComPorts, PortID))
+                error('Serial com port ID not found.');
             end
             
             self.portID = PortID;
@@ -42,37 +40,35 @@ classdef magstim < handle
         %% Opening The Desired Port
         function [errorOrSuccess, deviceResponse] = connect(self)
             %% Check Input Validity
-            if nargin < 1
-            	error('Not Enough Input Arguments');
-            end
+            narginchk(1, 1);
             % Create the port if doesn't already exist. We do this here
             % because if we disconnect we want to be able to re-connect
             % using the same object
             if isempty(self.port)
-                self.port = serial(self.portID);
-                self.port.BaudRate = 9600;
-                self.port.DataBits = 8;
-                self.port.Parity = 'none';
-                self.port.StopBits = 1;
+                self.port            = serial(self.portID);
+                self.port.BaudRate   = 9600;
+                self.port.DataBits   = 8;
+                self.port.Parity     = 'none';
+                self.port.StopBits   = 1;
                 self.port.Terminator = '';
-                self.port.Timeout = 0.3;
+                self.port.Timeout    = 0.3;
             end
             
             %% Open The Port
             if strcmp(self.port.Status, 'open')
                 errorOrSuccess = 0;
-                deviceResponse = 'Already Connected To Magstim';
+                deviceResponse = 'Already connected to Magstim.';
                 return
             else
                 fopen(self.port);
             end
             %% Try and Connect
-            [errorOrSuccess, deviceResponse] = self.remoteControl(1, 1);
+            [errorOrSuccess, deviceResponse] = self.remoteControl(true, true);
             if errorOrSuccess > 0
                 % Couldn't connect, so call disconnect to delete the
                 % connection. This will allow us to try again
                 self.disconnect()
-                error('Could not connect to the magstim');
+                error('Could not connect to the magstim.');
             else
                 self.connected = 1;
             end
@@ -81,14 +77,12 @@ classdef magstim < handle
         %% Closing The Desired Port
         function [errorOrSuccess, deviceResponse] = disconnect(self)
         %% Check Input Validity
-            if nargin < 1
-            	error('Not Enough Input Arguments');
-            end
+            narginchk(1, 1);
             %% Close The Port
             if ~isempty(self.port) && strcmp(self.port.Status, 'open')
                 % If connected, disarm and tell magstim we're relinquishing control
-                if self.connected == 1
-                    [~, deviceResponse]= self.remoteControl(0, 1);
+                if self.connected
+                    [~, deviceResponse]= self.remoteControl(false, true);
                 end
                 fclose(self.port);
             end
@@ -109,35 +103,16 @@ classdef magstim < handle
             % Outputs:
             % DeviceResponse: is the response that is sent back by the
             % device to the port indicating current information about the device
-            % errorOrsuccess: is a boolean value indicating succecc = 0 or error = 1
+            % errorOrSuccess: is a boolean value indicating success = 0 or error = 1
             % in performing the desired task
 
             %% Check Input Validity:
-            if nargin < 2
-                error('Not Enough Input Arguments');
-            end
-            if nargin < 3
-                getResponse = false ; %Default Value Set To 0
-            else
-                getResponse = varargin{1};
-            end
-            if (getResponse ~= 0 && getResponse ~= 1 )
-                error('getResponse Must Be A Boolean');
-            end
-            if ~(isnumeric(power))|| rem(power,1)~=0
-                error('power Must Be A Whole Number');
-            end
-            if (power < 0 || power > 100)
-                error('power Must Be A Positive Value Less Than Or Equal To 100');
-            end             
-            if length(power) > 1
-                error('Invaid Power Amplitude. It Must Be A Single Numeric');
-            end
+            narginchk(2, 3);
+            getResponse = magstim.checkForResponseRequest(varargin);
+            magstim.checkIntegerInput('Power', power, 0, 100);
 
             %% Create Control Command
-            
             [errorOrSuccess, deviceResponse] = self.processCommand(['@' sprintf('%03s',num2str(power))], getResponse, 3);
-            self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
             end
         
         function [errorOrSuccess, deviceResponse] = arm(self, varargin)
@@ -149,32 +124,21 @@ classdef magstim < handle
             % Outputs:
             % DeviceResponse: is the response that is sent back by the
             % device to the port indicating current information about the device
-            % errorOrsuccess: is a boolean value indicating succecc = 0 or error = 1
+            % errorOrSuccess: is a boolean value indicating success = 0 or error = 1
             % in performing the desired task
             
-            if self.armedOrnot ==1
-                warning('Device is already armed');
+            if self.armedStatus
+                warning('Device is already armed.');
             else
+                %% Check Input Validity:
+                narginchk(1, 2);
+                getResponse = magstim.checkForResponseRequest(varargin);
 
-            %% Check Input Validity:
-            if nargin < 1
-                error('Not Enough Input Arguments');
-            end
-            if length(varargin) > 1
-                error('Too Many Input Arguments');
-            end
-            if nargin < 2
-                getResponse = false ;
-            else
-                getResponse = varargin{1};
-            end
-            if (getResponse ~= 0 && getResponse ~= 1 )
-                error('getResponse Must Be A Boolean');
-            end
-
-            %% Create Control Command
-            [errorOrSuccess, deviceResponse] =  self.processCommand('EB', getResponse, 3); 
-            self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
+                %% Create Control Command
+                [errorOrSuccess, deviceResponse] =  self.processCommand('EB', getResponse, 3);
+                if ~errorOrSuccess
+                    self.armedStatus = 1;
+                end
             end
         end
         
@@ -187,29 +151,19 @@ classdef magstim < handle
             % Outputs:
             % DeviceResponse: is the response that is sent back by the
             % device to the port indicating current information about the device
-            % errorOrsuccess: is a boolean value indicating succecc = 0 or error = 1
+            % errorOrSuccess: is a boolean value indicating success = 0 or error = 1
             % in performing the desired task
 
             %% Check Input Validity:
-            if nargin < 1
-                error('Not Enough Input Arguments');
-            end
-            if length(varargin) > 1
-                error('Too Many Input Arguments');
-            end
-            if nargin < 2
-                getResponse = false ;
-            else
-                getResponse = varargin{1};
-            end
+            narginchk(1, 2);
+            getResponse = magstim.checkForResponseRequest(varargin);
 
-            if (getResponse ~= 0 && getResponse ~= 1 )
-                error('getResponse Must Be A Boolean');
-            end
             %% Create Control Command
             [errorOrSuccess, deviceResponse] =  self.processCommand('EA' ,getResponse, 3);
-            self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
+            if ~errorOrSuccess
+                self.armedStatus = 0;
             end
+        end
         
         function [errorOrSuccess, deviceResponse] = fire(self, varargin)
             % Inputs:
@@ -220,28 +174,16 @@ classdef magstim < handle
             % Outputs:
             % DeviceResponse: is the response that is sent back by the
             % device to the port indicating current information about the device
-            % errorOrsuccess: is a boolean value indicating succecc = 0 or error = 1
+            % errorOrSuccess: is a boolean value indicating success = 0 or error = 1
             % in performing the desired task
 
             %% Check Input Validity
-            if nargin < 1
-                error('Not Enough Input Arguments');
-            end
-            if length(varargin) > 1
-                error('Too Many Input Arguments');
-            end
-            if nargin < 2
-                getResponse = false ;
-            else
-                getResponse = varargin{1};
-            end
-            if (getResponse ~= 0 && getResponse ~= 1 )
-                error('getResponse Must Be A Boolean');
-            end
+            narginchk(1, 2);
+            getResponse = magstim.checkForResponseRequest(varargin);
+
             %% Create Control Command       
             [errorOrSuccess, deviceResponse] =  self.processCommand('EH', getResponse, 3);
-            self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
-            end
+        end
        
         function [errorOrSuccess, deviceResponse] = remoteControl(self, enable, varargin)
             % Inputs:
@@ -254,27 +196,14 @@ classdef magstim < handle
             % Outputs:
             % deviceResponse: is the response that is sent back by the
             % device to the port indicating current information about the device
-            % errorOrSuccess: is a boolean value indicating succecc = 0 or error = 1
+            % errorOrSuccess: is a boolean value indicating success = 0 or error = 1
             % in performing the desired task
             
             %% Check Input Validity
-            if nargin < 2
-            	error('Not Enough Input Arguments');
-            end
-            if length(varargin) > 1
-            	error('Too Many Input Arguments');
-            end
-            if nargin < 3
-            	getResponse = false;
-            else
-            	getResponse = varargin{1};
-            end
-               
-            if (enable ~= 0 && enable ~= 1 )
-                error('enable Must Be A Boolean');
-            end
-            if (getResponse ~= 0 && getResponse ~= 1 )
-                error('getResponse Must Be A Boolean');
+            narginchk(2, 3);
+            getResponse = magstim.checkForResponseRequest(varargin);
+            if ~ismember(enable, [0 1])
+                error('enable parameter must be Boolean.');
             end
            
             %% Create Control Command 
@@ -287,7 +216,6 @@ classdef magstim < handle
             end
             
             [errorOrSuccess, deviceResponse] =  self.processCommand(commandString, getResponse, 3);
-            self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
             if ~errorOrSuccess
                 self.connected = enable;
                 if enable
@@ -299,37 +227,31 @@ classdef magstim < handle
         end
         
         function [errorOrSuccess, deviceResponse] = getParameters(self)  
-        % Outputs:
-        % DeviceResponse: is the response that is sent back by the
-        % device to the port indicating current information about the device
-        % errorOrsuccess: is a boolean value indicating succecc = 0 or error = 1
-        % in performing the desired task
-            
-        %% Check Input Validity
-        if nargin < 1
-        	error('Not Enough Input Arguments');
-        end
-          
-        %% Create Control Command
-        [errorOrSuccess, deviceResponse] =  self.processCommand('J@', true, 12);
-        self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
-        end
-        
-        function [errorOrsuccess, DeviceResponse] = getTemperature(self)  
             % Outputs:
             % DeviceResponse: is the response that is sent back by the
             % device to the port indicating current information about the device
-            % errorOrsuccess: is a boolean value indicating succecc = 0 or error = 1
+            % errorOrSuccess: is a boolean value indicating success = 0 or error = 1
+            % in performing the desired task
+
+            %% Check Input Validity
+            narginchk(1, 1);
+
+            %% Create Control Command
+            [errorOrSuccess, deviceResponse] =  self.processCommand('J@', true, 12);
+        end
+        
+        function [errorOrSuccess, DeviceResponse] = getTemperature(self)  
+            % Outputs:
+            % DeviceResponse: is the response that is sent back by the
+            % device to the port indicating current information about the device
+            % errorOrSuccess: is a boolean value indicating success = 0 or error = 1
             % in performing the desired task
             
             %% Check Input Validity
-            if nargin <1
-            	error('Not Enough Input Arguments');
-            end
+            narginchk(1, 1);
             
             %% Create Control Command
-            [errorOrsuccess, DeviceResponse] =  self.processCommand('F@', true, 9);
-            self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
+            [errorOrSuccess, DeviceResponse] =  self.processCommand('F@', true, 9);
         end
         
         function poke(self, loud)
@@ -338,17 +260,14 @@ classdef magstim < handle
             % not send (False=0) an enable remote control command while
             % poking
             
-            %% Check Input Validity 
-            if nargin<2
-            	loud = 0;
-            end
-                
-            if (loud ~= 0 && loud ~= 1 )
-            	error('send Parameter Must Be A Boolean');
-            end 
-                 
-            if loud == 1
-            	self.remoteControl(1,0)
+            %% Check Input Validity
+            narginchk(1, 2);
+            if nargin > 1
+                if ~ismember(loud,[0 1])
+                    error('enable parameter must be Boolean.');
+                elseif loud
+                    self.remoteControl(1,0)
+                end
             end
             stop(self.communicationTimer) 
             start(self.communicationTimer)
@@ -358,29 +277,21 @@ classdef magstim < handle
             % Inputs:
             % delay <double>: determines the duration of time for which 
             % matlab is paused while maintaining communication via serial COM port
-
-            if nargin<2
-                error('Not Enough Input Arguments');
-            end
-            if ~isnumeric(delay)|| length(delay)>1 || delay<0
-                error('The Delay Time Must Be A Single Positive Number');
-            end
+            narginchk(2, 2);
+            magstim.checkIntegerInput('Delay', delay, 0, Inf);
             
             nextHundredth = 0;
             tic; 
             elapsed = 0.0;
             while elapsed <= delay
-                    elapsed = toc;
-                    if ceil(elapsed / 0.1) > nextHundredth 
-                        % ceil instead of floor guarantees execution on first iteration and thus also for pauses < 0.1 s            
-                        self.remoteControl(1, 0);
-                        nextHundredth = nextHundredth + 1;
-                    end
+                elapsed = toc;
+                if ceil(elapsed / 0.1) > nextHundredth 
+                    % ceil instead of floor guarantees execution on first iteration and thus also for pauses < 0.1 s            
+                    self.remoteControl(1, 0);
+                    nextHundredth = nextHundredth + 1;
+                end
             end
-
-        end 
-        
-        
+        end
     end
     
     methods (Access = 'protected')
@@ -418,7 +329,7 @@ classdef magstim < handle
             %% Check If Port Is Connected
             % Or is a command does not require remote control
             if (self.connected == 0) && ~ismember(commandString(1),['Q','R','J','F','\']) && ~strcmp(commandString, 'EA')
-                error ('You Need To First Connect The Port');
+                error ('You need to connect to the Magstim before sending commands.');
             end
             % Stop the timer (if we've already started it) and clear the port
             if ~isempty(self.communicationTimer)
@@ -428,7 +339,7 @@ classdef magstim < handle
                 
             %% Send the command string
             fprintf(self.port, [commandString magstim.calcCRC(commandString)]); 
-            
+
             % Read the first character in the response from the stimulator
             commandAcknowledge = char(fread(self.port, 1));
             if isempty(commandAcknowledge)
@@ -436,7 +347,7 @@ classdef magstim < handle
                 deviceResponse = 'No response detected from device.';
             elseif strcmp(commandAcknowledge,'?')
                 errorOrSuccess = 2;
-                deviceResponse = 'Invalid command';
+                deviceResponse = 'Invalid command.';
             elseif strcmp(commandAcknowledge,'N')
                 readData = '';
                 while true
@@ -452,25 +363,26 @@ classdef magstim < handle
                 deviceResponse = self.parseResponse(commandAcknowledge, readData);
             else 
                 readData = char(fread(self.port, bytesExpected - 1));
-                if length(readData) < (bytesExpected - 1)
+                if strcmp(readData(1),'?')
                     errorOrSuccess = 3;
-                    deviceResponse = 'Incomplete response from device.';
-                elseif strcmp(readData(1),'?')
-                    errorOrSuccess = 4;
                     deviceResponse = 'Supplied data value not acceptable.';
                 elseif strcmp(readData(1),'S')
-                    errorOrSuccess = 5;
+                    errorOrSuccess = 4;
                     deviceResponse = 'Command conflicts with current device settings.';
+                elseif length(readData) < (bytesExpected - 1)
+                    errorOrSuccess = 5;
+                    deviceResponse = 'Incomplete response from device.';
                 elseif readData(end) ~= magstim.calcCRC([commandAcknowledge readData(1:end-1)'])
                     errorOrSuccess = 6;
                     deviceResponse = 'CRC does not match message contents.';
-                elseif getResponse
+                else
                     % Creating Output
                     errorOrSuccess = 0;
                     deviceResponse = self.parseResponse(commandAcknowledge, readData);
-                else
-                    errorOrSuccess = 0;
-                    deviceResponse = [];
+                    self.armedStatus = deviceResponse.InstrumentStatus.Armed || deviceResponse.InstrumentStatus.Ready;
+                    if ~getResponse
+                        deviceResponse = [];
+                    end
                 end   
             end
             % Only restart the timer if we're: 1) connected to the magstim,
@@ -481,7 +393,7 @@ classdef magstim < handle
         end
         
         %%
-        function info = parseResponse(self, command, readData)
+        function info = parseResponse(~, command, readData)
             %% Getting Instrument Status (always returned)
             statusCode = bitget(double(readData(1)),1:8);
             info = struct('InstrumentStatus',struct('Standby',             statusCode(1),...
@@ -505,12 +417,48 @@ classdef magstim < handle
     end
     
     methods (Static)
-        %%     
-        function checkSum = calcCRC(commandString) % CRC checksum calculation
+        %% CRC checksum calculation
+        function checkSum = calcCRC(commandString)
             % Sum command string, truncate to 8 bits, invert, and then
             % return as character array
             checkSum = char(bitcmp(bitand(sum(double(commandString)),255),'uint8'));
         end
-       
-    end
+        
+        %% Parse varargin (i.e., getResponse) inputs to magstim methods
+        function getResponse = checkForResponseRequest(getResponseParameter)
+            % If getResponse argument is given, check that it is either 0 or 1, otherwise set to false (0)
+            if isempty(getResponseParameter)
+                getResponse = false;
+            else
+                getResponse = getResponseParameter{1};
+                if ~ismember(getResponse, [0 1])
+                    error('getResponse parameter must be Boolean.');
+                end
+            end
+        end
+        %% Check whether argument is a valid numeric value
+        function checkNumericInput(inputString, inputParameter, minValue, maxValue)
+            if ~isnumeric(inputParameter) || length(inputParameter) > 1
+                error('Invalid %s. Must be a single numeric value.', inputString)
+            end
+            if (inputParameter < minValue || inputParameter > maxValue)
+                if isinf(maxValue)
+                    rangeString = sprintf(' greater than %s.', num2str(minValue));
+                else
+                    rangeString = sprintf(' between %s and %s.', num2str(minValue), num2str(maxValue));
+                end
+                error('%s must have a value %s', inputString, rangeString);
+            end
+            if mod(inputParameter, 0.1)
+                error('%s can have at most one decimal value.',inputString);
+            end
+        end
+        %% Check whether argument is a valid integer value
+        function checkIntegerInput(inputString, inputParameter, minValue, maxValue)
+            magstim.checkNumericInput(inputString, inputParameter, minValue, maxValue)
+            if mod(inputParameter, 1)
+                error('Invalid %s value. Must be a single integer.', inputString)
+            end         
+        end
+    end    
 end

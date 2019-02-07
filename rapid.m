@@ -11,27 +11,33 @@
 classdef rapid < magstim & handle
     properties (SetAccess = private)
     	enhancedPowerModeStatus = 0; %Enhanced Power Setting Mode
-        rapidType
+        rapidType = [];
         unlockCode = [];
         version = [];
         controlCommand = '';
-        controlBytes;
-        armedOrnot = 0;
+        controlBytes = [];
+    end
+    
+    properties (Constant)
+        energyPowerTable = [  0.0,   0.0,   0.1,   0.2,   0.4,   0.6,   0.9,   1.2,   1.6,   2.0,...
+                              2.5,   3.0,   3.6,   4.3,   4.9,   5.7,   6.4,   7.3,   8.2,   9.1,...
+                             10.1,  11.1,  12.2,  13.3,  14.5,  15.7,  17.0,  18.4,  19.7,  21.2,...
+                             22.7,  24.2,  25.8,  27.4,  29.1,  30.8,  32.6,  34.5,  36.4,  38.3,...
+                             40.3,  42.3,  44.4,  46.6,  48.8,  51.0,  53.3,  55.6,  58.0,  60.5,...
+                             63.0,  65.5,  68.1,  70.7,  73.4,  76.2,  79.0,  81.8,  84.7,  87.7,...
+                             90.7,  93.7,  96.8, 100.0, 103.2, 106.4, 109.7, 113.0, 116.4, 119.9,...
+                            123.4, 126.9, 130.5, 134.2, 137.9, 141.7, 145.5, 149.3, 153.2, 157.2,...
+                            161.2, 165.2, 169.3, 173.5, 177.7, 181.9, 186.3, 190.6, 195.0, 199.5,...
+                            204.0, 208.5, 213.1, 217.8, 222.5, 227.3, 232.1, 236.9, 241.9, 246.8, 252]; 
     end
     
     methods
     	function self = rapid(PortID, rapidType, varargin)
-            if nargin < 1
-                error('Not Enough Input Arguments');
-            end
+            narginchk(1, 3)
             if nargin < 2
                 rapidType = 'rapid';
-            end
-            if ~ismember(lower(rapidType),['rapid','super','superplus'])
+            elseif ~ismember(lower(rapidType),['rapid','super','superplus'])
                 error('rapidType Must Be ''Rapid'', ''Super'', or ''SuperPlus''.')
-            end
-            if length(varargin) > 1
-                error('Too Many Input Arguments');
             end
             self = self@magstim(PortID);
             self.rapidType = lower(rapidType);
@@ -50,241 +56,118 @@ classdef rapid < magstim & handle
             % Outputs:
             % deviceResponse: is the response that is sent back by the
             % device to the port indicating current information about the device
-            % errorOrSuccess: is a boolean value indicating succecc = 0 or error = 1
+            % errorOrSuccess: is a boolean value indicating success = 0 or error = 1
             % in performing the desired task
 
             %% Check Input Validity:
-            if nargin < 2
-                error('Not Enough Input Arguments');
-            end
-            if nargin < 3
-                getResponse = false ; %Default Value Set To 0
+            narginchk(2, 3);
+            getResponse = magstim.checkForResponseRequest(varargin);
+            if self.enhancedPowerModeStatus
+                maxPower = 110;
             else
-                getResponse = varargin{1};
+                maxPower = 100;
             end
-            if (getResponse ~= 0 && getResponse ~= 1 )
-                error('getResponse Must Be A Boolean');
-            end
-            if ~(isnumeric(power))|| rem(power,1)~=0
-                error('power Must Be A Whole Number');
-            end
-            if (power < 0 || ((power > 100) && (self.enhancedPowerMode == 0)) || power > 110)
-                error('power Must Be A Positive Value Less Than Or Equal To 100 (or 110 if Enhanced Power Mode activated)');
-            end             
-            if length(power) > 1
-                error('Invaid Power Amplitude. It Must Be A Single Numeric');
-            end
-            
+            magstim.checkIntegerInput('Power', power, 0, maxPower);
+
             %% Create Control Command           
-            [errorOrSuccess, deviceResponse] = self.processCommand(['@' sprintf('%03s',num2str(power))], getResponse, 3);
-             self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
+            [errorOrSuccess, deviceResponse] = self.processCommand(['@' sprintf('%03s', num2str(power))], getResponse, 3);
         end
-         
+
         function [errorOrSuccess, deviceResponse] = setTrain(self, trainParameters , varargin)
 
             % Inputs:           
             % trainParameters<double struct>: is a numeric struct with three fields
-            % indicating the desired 'frequency', 'numberOfPulses', 'duration'. In each call of the
+            % indicating the desired 'frequency', 'nPulses', 'duration'. In each call of the
             % function, only two of the three parameters can be set, leaving the third field null ([]). 
             % varargin<bool>: refers to getResponse<bool> that can be True (1) or False (0)
             % indicating whether a response from device is required or not.
             % The default value is set to false.
-            
+
             % Outputs:
             % deviceResponse: is the response that is sent back by the
             % device to the port indicating current information about the device
-            % errorOrSuccess: is a boolean value indicating succecc = 0 or error = 1
+            % errorOrSuccess: is a boolean value indicating success = 0 or error = 1
             % in performing the desired task
+			min_nPulses = 1;
+			min_duration = 0.1;
+			min_frequency = 0.1;
+			max_frequency = 100;
+            if self.version{1} >= 9
+                max_nPulses = 6000;
+                max_duration = 100;
+                duration_padding = '%04s';
+                nPulses_padding = '%05s';
+            else
+                max_nPulses = 1000;
+                max_duration = 10;
+                duration_padding = '%03s';
+                nPulses_padding = '%04s';
+            end
             
             %% Check Input Validity:
-            if nargin < 2
-                 error('Not Enough Input Arguments');
-            end
-            if length(varargin) > 1
-                error('Too Many Input Arguments');
-            end
-            if nargin < 3
-                getResponse = false ; %Default Value Set To 0
-            else
-                getResponse = varargin{1};
-            end
-            if (getResponse ~= 0 && getResponse ~= 1)
-                   error('getResponse Must Be A Boolean');
-            end
-            
+            narginchk(2, 3);
+            getResponse = magstim.checkForResponseRequest(varargin);
             if ~isempty(trainParameters.frequency)
-                frequency = trainParameters.frequency;
-            else
-                frequency = [];
+                magstim.checkNumericInput('Frequency', trainParameters.frequency, min_frequency, max_frequency);
             end
-             if ~isempty(trainParameters.numberOfPulses)
-                numberOfPulses = trainParameters.numberOfPulses;
-            else
-                numberOfPulses = [];
-             end
-             if ~isempty(trainParameters.duration)
-                 duration = trainParameters.duration;
-             else
-                 duration = [];
-             end
-             
-             %Evaluating whether exactly 2 inputs are numeric
-             numericInputs = 0;
-             
-             if (isnumeric(frequency)) && ~isempty(frequency)
-                 if (length(frequency) > 1)
-                     error('Train Parameters Must Be Single Numerics.  Please doublecheck the frequency input.');
-                 end
-                 numericInputs = numericInputs + 1;
-             end
-             
-             if (isnumeric(numberOfPulses))  && ~isempty(numberOfPulses)
-                 if (length(numberOfPulses) > 1)
-                     error('Train Parameters Must Be Single Numerics.  Please doublecheck the numberOfPulses input.');
-                 end
-                 numericInputs = numericInputs + 1;
-             end
-             
-             if (isnumeric(duration))  && ~isempty(duration)
-                 if (length(duration) > 1)
-                     error('Train Parameters Must Be Single Numerics.  Please doublecheck the duration input.');
-                 end
-                 numericInputs = numericInputs + 1;
-             end
-             
-             if numericInputs ~= 2
-                 error('Please provide exactly 2 numerical inputs in the Train Parameter structure.')
-             end
-             
-             
-             energyPowerTable = [  0.0,   0.0,   0.1,   0.2,   0.4,   0.6,   0.9,   1.2,   1.6,   2.0,...
-                 2.5,   3.0,   3.6,   4.3,   4.9,   5.7,   6.4,   7.3,   8.2,   9.1,...
-                 10.1,  11.1,  12.2,  13.3,  14.5,  15.7,  17.0,  18.4,  19.7,  21.2,...
-                 22.7,  24.2,  25.8,  27.4,  29.1,  30.8,  32.6,  34.5,  36.4,  38.3,...
-                 40.3,  42.3,  44.4,  46.6,  48.8,  51.0,  53.3,  55.6,  58.0,  60.5,...
-                 63.0,  65.5,  68.1,  70.7,  73.4,  76.2,  79.0,  81.8,  84.7,  87.7,...
-                 90.7,  93.7,  96.8, 100.0, 103.2, 106.4, 109.7, 113.0, 116.4, 119.9,...
-                 123.4, 126.9, 130.5, 134.2, 137.9, 141.7, 145.5, 149.3, 153.2, 157.2,...
-                 161.2, 165.2, 169.3, 173.5, 177.7, 181.9, 186.3, 190.6, 195.0, 199.5,...
-                 204.0, 208.5, 213.1, 217.8, 222.5, 227.3, 232.1, 236.9, 241.9, 246.8, 252];
-             
-             [~, deviceResponse] = self.getParameters;
-             ePulse = energyPowerTable(deviceResponse.PowerA + 1);
-             
-             if isempty(duration)
-                 duration = numberOfPulses/frequency;
-                 duration = round(duration,1);
-             elseif isempty(numberOfPulses)
-                 numberOfPulses = duration * frequency;
-                 numberOfPulses = floor(numberOfPulses);
-             elseif isempty(frequency)
-                 frequency = numberOfPulses/duration;
-                 frequency = round(frequency,1);
-             end
-                            
-          
-           %Frequency Validity
-           if (frequency > 100 || frequency <0)
-               error('frequency Out Of Bounds');
-           end
-           if (frequency > 60 || frequency <0)
-               warning('Absolute maximum stimulation frequency is 100.0Hz for 240V systems, and 60Hz for 115V.');
-           end
-            
-           frequencycheck = frequency;
-           decimalPlaces = 0; % number of places after decimal initialized to 0.
-           temp = floor(frequencycheck);
-           diff = frequencycheck - temp;
-           while(diff > 0)
-                decimalPlaces = decimalPlaces + 1;
-                frequencycheck = frequencycheck * 10;
-                temp = floor(frequencycheck);
-                diff = frequencycheck - temp;
+            if ~isempty(trainParameters.nPulses)
+                magstim.checkIntegerInput('NPulses', trainParameters.nPulses, min_nPulses, max_nPulses);
             end
-                
-            if decimalPlaces > 1
-               error('frequency Can Have Up To Just A Single Decimal Place');
+            if ~isempty(trainParameters.duration)
+                magstim.checkNumericInput('Duration', trainParameters.duration, min_duration, max_duration);
             end
-           
-%             if ((frequency / 10) > (1050 / ePulse))
-%                error('Frequency Out Of Bounds');
-%             end
 
-                
-            %Duration Validity
-             if self.version{1} >= 9
-                 if ~(duration>=0 && duration<=100) 
-                     error('duration Out Of Bounds');
-                 end
-             else
-                 if ~(duration>=0 && duration<=10)
-                     error('duration Out Of Bounds');
-                 end
-             end
-                           
-             durationcheck = duration;
-             decimalPlaces = 0; % no of places after decimal initialized to 0.
-             temp = floor(durationcheck);
-             diff = durationcheck - temp;
-             while(diff > 0)
-                decimalPlaces = decimalPlaces + 1;
-                durationcheck = durationcheck * 10;
-                temp = floor(durationcheck);
-                diff = durationcheck - temp;
-             end
-                
-             if decimalPlaces > 1
-                error('duration Can Have Up To Just A Single Decimal Place');
-             end
-             if duration > (63000 / (ePulse * frequency))
-                error('Duration Out Of Bounds');
-             end
-             
-                                    
-             %numberOfPulses Validity
-              if  rem(numberOfPulses,1)~=0
-                  error('numberOfPulses Must Be A Whole Number');
-              end
-                
-              if self.version{1} >= 9
-                  if ~(numberOfPulses>=1 && numberOfPulses<=6000)
-                      error('numberOfPulses Out Of Bounds');
-                  end
-              else
-                  if ~(numberOfPulses>=1 && numberOfPulses<=1000)
-                      error('numberOfPulses Out Of Bounds');
-                  end
-              end 
-               
-             [~, minWaitTime] = calcMinWaitTime(numberOfPulses, frequency, self);
-             if minWaitTime<0.5
-                 warning('You can try changing the input parameters to get precise results');
-             end
-                                                                                                             
-              %% Create Control Command
-                                                             
-               %1. Frequency
-               self.processCommand(['B' sprintf('%04s',num2str(frequency))], getResponse, 4);
-                             
-               %2. Duration
-               if self.version{1} >= 9
-                     padding = '%04s';
-               else
-                     padding = '%03s';
-               end
-              self.processCommand(['[' sprintf(padding,num2str(duration))], getResponse, 4);
-               
-               %3. Number Of Pulses
-               if self.version{1} >= 9
-                    padding = '%05s';
-                else
-                    padding = '%04s';
+            if numel([trainParameters.frequency trainParameters.nPulses trainParameters.duration]) ~= 2
+                error('Please provide exactly 2 numerical inputs to the trainParameters structure. The remaining input must be left as an empty vector [].')
+            end
+
+            if isempty(trainParameters.duration)
+                trainParameters.duration = round((trainParameters.nPulses / trainParameters.frequency), 1);
+                if (trainParameters.duration < min_duration) || (trainParameters.duration > max_duration)
+                    error('Derived duration of %s seconds from provided nPulses (%s pulses) and frequency (%s Hz). This is outside the allowed range of %s to %s seconds.',...
+                          num2str(trainParameters.duration), num2str(trainParameters.nPulses), num2str(trainParameters.frequency), num2str(min_duration), num2str(max_duration));
                 end
-              [errorOrSuccess, deviceResponse] = self.processCommand(['D' sprintf(padding,num2str(numberOfPulses))], getResponse, 4);
-              self.armedOrnot = deviceResponse.InstrumentStatus.Armed;                               
+            elseif isempty(trainParameters.nPulses)
+                trainParameters.nPulses = floor(trainParameters.duration * trainParameters.frequency);
+                if (trainParameters.nPulses < min_nPulses) || (trainParameters.nPulses > max_nPulses)
+                    error('Derived nPulses of %s pulses from provided duration (%s seconds) and frequency (%s Hz). This is outside the allowed range of %s to %s pulses.',...
+                          num2str(trainParameters.nPulses), num2str(trainParameters.duration), num2str(trainParameters.frequency), num2str(min_nPulses), num2str(max_nPulses));
+                end                
+            elseif isempty(trainParameters.frequency)
+                trainParameters.frequency = round((trainParameters.nPulses / trainParameters.duration), 1);
+                if (trainParameters.frequency < min_frequency) || (trainParameters.frequency > max_frequency)
+                    error('Derived frequency of %s Hz from provided duration (%s seconds) and nPulses (%s pulses). This is outside the allowed range of %s to %s Hz.',...
+                          num2str(trainParameters.frequency), num2str(trainParameters.duration), num2str(trainParameters.nPulses), num2str(min_frequency), num2str(max_frequency));
+                end 
+            end
+            
+            %if trainParameters.frequency > 60
+            %    warning('Maximum stimulation frequency is 60 Hz for 115V areas.');
+            %end
+            
+            [errorOrSuccess, deviceResponse] = self.getParameters();
+            if ~errorOrSuccess
+                ePulse = rapid.energyPowerTable(deviceResponse.PowerA + 1);
+                if trainParameters.duration > (63000 / (ePulse * trainParameters.frequency))
+                    error('Duration exceeds maximum on time.');
+                end
+            else
+                error('Could not acquire current power to assess maximum on time.');
+            end
+
+            %% Create Control Command
+            %1. Frequency
+            trainParameters.frequency = round(trainParameters.frequency * 10);
+            self.processCommand(['B' sprintf('%04s', num2str(trainParameters.frequency))], getResponse, 4);
+
+            %2. Duration
+            trainParameters.duration = round(trainParameters.duration * 10);
+            self.processCommand(['[' sprintf(duration_padding, num2str(trainParameters.duration))], getResponse, 4);
+
+            %3. Number Of Pulses
+            [errorOrSuccess, deviceResponse] = self.processCommand(['D' sprintf(nPulses_padding, num2str(trainParameters.nPulses))], getResponse, 4);                              
         end
-        
-        
+
         function [errorOrSuccess, deviceResponse] = enhancedPowerMode(self, enable, varargin)
             % Inputs:
             % enable<boolean> is a boolean that can be True(1) to
@@ -292,77 +175,54 @@ classdef rapid < magstim & handle
             % varargin<bool> refers to getResponse<bool> that can be True (1) or False (0)
             % indicating whether a response from device is required or not.
             % The default value is set to false.
-            
+
             % Outputs:
             % deviceResponse: is the response that is sent back by the
             % device to the port indicating current information about the device
-            % errorOrSuccess: is a boolean value indicating succecc = 0 or error = 1
+            % errorOrSuccess: is a boolean value indicating success = 0 or error = 1
             % in performing the desired task
-            
+
             %% Check Input Validity:
-            if nargin < 2
-            	error('Not Enough Input Arguments');
+            narginchk(2, 3);
+            getResponse = magstim.checkForResponseRequest(varargin);
+            if ~ismember(enable, [0 1])
+                error('enable parameter must be Boolean.');
             end
-            if length(varargin) > 1
-                error('Too Many Input Arguments');
-            end
-            if nargin < 3
-                getResponse = false; %Default Value Set To 0
-            else
-                getResponse = varargin{1};
-            end
-            if (getResponse ~= 0 && getResponse ~= 1)
-            	error('getResponse Must Be A Boolean');
-            end
-            if (enable ~= 0 && enable ~= 1)
-            	error('enable Must Be A Boolean');
-            end
-           
+
             %% Create Control Command 
             if enable %Enable
                 commandString = '^@';
             else %Disable
                 commandString = '_@';
             end
-               
+
             [errorOrSuccess, deviceResponse] =  self.processCommand(commandString, getResponse, 4);
-            self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
+            if ~errorOrSuccess
+                self.enhancedPowerModeStatus = enable;
+            end
         end
-          
+
         function [errorOrSuccess, deviceResponse] = ignoreCoilSafetyInterlock(self, varargin)
             % Inputs:
             % varargin<bool> refers to getResponse<bool> that can be True (1) or False (0)
             % indicating whether a response from device is required or not.
             % The default value is set to false.
-            
+
             % Outputs:
             % deviceResponse: is the response that is sent back by the
             % device to the port indicating current information about the device
-            % errorOrSuccess: is a boolean value indicating succecc = 0 or error = 1
+            % errorOrSuccess: is a boolean value indicating success = 0 or error = 1
             % in performing the desired task
-            
+
             %% Check Input Validity:
-            if nargin < 1
-            	error('Not Enough Input Arguments');
-            end
-            if length(varargin) > 1
-                error('Too Many Input Arguments');
-            end
-            if nargin < 2
-                getResponse = false ; %Default Value Set To 0
-            else
-                getResponse = varargin{1};
-            end
-            if (getResponse ~= 0 && getResponse ~= 1)
-            	error('getResponse Must Be A Boolean');
-            end
-           
+            narginchk(1, 2);
+            getResponse = magstim.checkForResponseRequest(varargin);
+
             %% Create Control Command 
             [errorOrSuccess, deviceResponse] =  self.processCommand('b@', getResponse, 3);
-            self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
         end
-          
-        
+
+
         function [errorOrSuccess, deviceResponse] = rTMSMode(self, enable, varargin)
             % Inputs:
             % enable<boolean> is a boolean that can be True(1) to
@@ -370,32 +230,20 @@ classdef rapid < magstim & handle
             % varargin<bool> refers to getResponse<bool> that can be True (1) or False (0)
             % indicating whether a response from device is required or not.
             % The default value is set to false.
-            
+
             % Outputs:
             % DeviceResponse: is the response that is sent back by the
             % device to the port indicating current information about the device
-            % errorOrsuccess: is a boolean value indicating succecc = 0 or error = 1
+            % errorOrSuccess: is a boolean value indicating success = 0 or error = 1
             % in performing the desired task
-            
+
             %% Check Input Validity:
-            if nargin < 2
-                error('Not Enough Input Arguments');
+            narginchk(2, 3);
+            getResponse = magstim.checkForResponseRequest(varargin);
+            if ~ismember(enable, [0 1])
+                error('enable parameter must be Boolean.');
             end
-            if length(varargin) > 1
-                error('Too Many Input Arguments');
-            end
-            if nargin < 3
-                getResponse = false ; %Default Value Set To 0
-            else
-                getResponse = varargin{1};
-            end
-            if (getResponse ~= 0 && getResponse ~= 1)
-            	error('getResponse Must Be A Boolean');
-            end
-            if (enable ~= 0 && enable ~= 1 )
-            	error('enable Must Be A Boolean');
-            end
-            
+
             %% Create Control Command
             if self.version{1} >= 9
                 padding = '%04s';
@@ -404,26 +252,22 @@ classdef rapid < magstim & handle
             end
             if enable
                 [errorOrSuccess, deviceResponse] = self.processCommand(['[' sprintf(padding,'10')], getResponse, 4);
-                self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
             else
                 [errorOrSuccess, deviceResponse] = self.processCommand(['[' sprintf(padding,'00')], getResponse, 4);
-                self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
             end
-            
+
         end
-       
+
         function [errorOrSuccess, deviceResponse] = getParameters(self)  
             % Outputs:
             % deviceResponse: is the response that is sent back by the
             % device to the port indicating current information about the device
-            % errorOrSuccess: is a boolean value indicating succecc = 0 or error = 1
+            % errorOrSuccess: is a boolean value indicating success = 0 or error = 1
             % in performing the desired task
-            
+
             %% Check Input Validity
-            if nargin < 1
-            	error('Not Enough Input Arguments');
-            end
-          
+            narginchk(1, 1);
+
             %% Create Control Command 
             if self.version{1} >= 9
                 returnBytes = 24;
@@ -433,9 +277,8 @@ classdef rapid < magstim & handle
                 returnBytes = 21;
             end
             [errorOrSuccess, deviceResponse] =  self.processCommand('\@', true, returnBytes);
-            self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
         end
-           
+
         %% Get Version
         function [errorOrSuccess, deviceResponse] = getDeviceVersion(self)
         %% Create Control Command
@@ -446,7 +289,7 @@ classdef rapid < magstim & handle
                 deviceResponse = self.version;
             end
         end
-        
+
         function [errorOrSuccess, deviceResponse] = remoteControl(self, enable, varargin)
             % Inputs:
             % enable<boolean> is a boolean that can be True(1) to
@@ -454,32 +297,20 @@ classdef rapid < magstim & handle
             % varargin<bool> refers to getResponse<bool> that can be True (1) or False (0)
             % indicating whether a response from device is required or not.
             % The default value is set to false.
-            
+
             % Outputs:
             % deviceResponse: is the response that is sent back by the
             % device to the port indicating current information about the device
-            % errorOrSuccess: is a boolean value indicating succecc = 0 or error = 1
+            % errorOrSuccess: is a boolean value indicating success = 0 or error = 1
             % in performing the desired task
-            
+
             %% Check Input Validity
-            if nargin < 2
-            	error('Not Enough Input Arguments');
+            narginchk(2, 3);
+            getResponse = magstim.checkForResponseRequest(varargin);
+            if ~ismember(enable, [0 1])
+                error('enable parameter must be Boolean.');
             end
-            if length(varargin) > 1
-            	error('Too Many Input Arguments');
-            end
-            if nargin < 3
-            	getResponse = false;
-            else
-            	getResponse = varargin{1};
-            end
-            if (enable ~= 0 && enable ~= 1 )
-                error('enable Must Be A Boolean');
-            end
-            if (getResponse ~= 0 && getResponse ~= 1 )
-                error('getResponse Must Be A Boolean');
-            end
-           
+
             %% Create Control Command
             if enable %Enable
                 if ~isempty(self.unlockCode)
@@ -492,11 +323,10 @@ classdef rapid < magstim & handle
                 % Attempt to disarm the stimulator
                 self.disarm();
             end
-            
+
             % Keep a record of if we're connecting for the first time
             alreadyConnected = self.connected;
             [errorOrSuccess, deviceResponse] =  self.processCommand(commandString, getResponse, 3);
-            self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
             if ~errorOrSuccess
                 self.connected = enable;
                 if enable
@@ -526,34 +356,26 @@ classdef rapid < magstim & handle
                 end
             end
         end
-        
+
         %% Get System Status
         function [errorOrSuccess, deviceResponse] = getSystemStatus(self)
-            if nargin < 1
-            	error('Not Enough Input Arguments');
-            elseif nargin > 1
-                error('Too Many Input Arguments');
-            end
+            %% Check Input Validity
+            narginchk(1, 1);
             %% Create Control Command
             if self.version{1} >= 9
                 [errorOrSuccess, deviceResponse] =  self.processCommand('x@', true, 6);
-                self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
             else
                 errorOrSuccess = 7;
-                deviceResponse = 'This command is unavailable on your device';
+                deviceResponse = 'This command is unavailable with your device version.';
             end
         end        
 
         %% Get Error Code
         function [errorOrSuccess, deviceResponse] = getErrorCode(self)
-            if nargin < 1
-            	error('Not Enough Input Arguments');
-            elseif nargin > 1
-                error('Too Many Input Arguments');
-            end
+            %% Check Input Validity
+            narginchk(1, 1);
             %% Create Control Command
-        	[errorOrSuccess, deviceResponse] = self.processCommand('I@', true, 6);
-            self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
+            [errorOrSuccess, deviceResponse] = self.processCommand('I@', true, 6);
         end
 
         %% Set Charge Delay
@@ -563,100 +385,55 @@ classdef rapid < magstim & handle
             % varargin<bool> refers to getResponse<bool> that can be True (1) or False (0)
             % indicating whether a response from device is required or not.
             % The default value is set to false.
-            
+
             % Outputs:
             % deviceResponse: is the response that is sent back by the
             % device to the port indicating current information about the device
             % errorOrSuccess: is a boolean value indicating success = 0 or error = 1
             % in performing the desired task
             %% Check Input Validity:
-            if nargin < 2
-            	error('Not Enough Input Arguments');
-            end
-            if length(varargin) > 1
-                error('Too Many Input Arguments');
-            end
-            if nargin < 3
-                getResponse = false ; %Default Value Set To 0
-            else
-                getResponse = varargin{1};
-            end
-            if (getResponse ~= 0 && getResponse ~= 1)
-            	error('getResponse Must Be A Boolean');
-            end
-            if ~(isnumeric(chargeDelay)) || rem(chargeDelay,1)~=0
-                error('The chargeDelay Must Be A Number');
-            end
-            if (chargeDelay < 0)
-                error('chargeDelay Must Be A Positive Value');
-            end
-            if length(chargeDelay) > 1
-                error('Invaid chargeDelay. It Must Be A Single Numeric');
-            end            
+            narginchk(2, 3);
+            getResponse = magstim.checkForResponseRequest(varargin);
+            magstim.checkIntegerInput('Charge Delay', chargeDelay, 0, Inf);           
             %% Create Control Command
             if self.version{1} >= 9
+                if chargeDelay < 0
+                    error('Minimum chargeDelay is 0 ms.');
+                end
                 if self.version{1} >= 10
-                    %if chargeDelay > 10000
-                    %    error('Maximum chargeDelay is 10000 ms.');
-                    %end
+                    if chargeDelay > 10000
+                        error('Maximum chargeDelay is 10000 ms.');
+                    end
                     padding = '%05s';
                 else
-                    %if chargeDelay > 2000
-                    %    error('Maximum chargeDelay is 2000 ms.');
-                    %end
+                    if chargeDelay > 2000
+                        error('Maximum chargeDelay is 2000 ms.');
+                    end
                     padding = '%04s';
                 end
-                [errorOrSuccess, deviceResponse] = self.processCommand(['n' sprintf(padding,num2str(chargeDelay))], getResponse, 3);
-                self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
+                [errorOrSuccess, deviceResponse] = self.processCommand(['n' sprintf(padding,num2str(chargeDelay))], getResponse, 4);
             else
                 errorOrSuccess = 7;
-                deviceResponse = 'This command is unavailable on your device';
+                deviceResponse = 'This command is unavailable with your device version.';
             end
         end 
-        
+
         %% Get Charge Delay
         function [errorOrSuccess, deviceResponse] = getChargeDelay(self)
-            if nargin < 1
-            	error('Not Enough Input Arguments');
-            elseif nargin > 1
-                error('Too Many Input Arguments');
-            end            
+            %% Check Input Validity
+            narginchk(1, 1);          
             %% Create Control Command
             if self.version{1} >= 9
                 if self.version{1} >= 10
-                    returnBytes = 7;
+                    returnBytes = 8;
                 else
-                    returnBytes = 6;
+                    returnBytes = 7;
                 end
                 [errorOrSuccess, deviceResponse] =  self.processCommand('o@', true, returnBytes);
-                self.armedOrnot = deviceResponse.InstrumentStatus.Armed;
             else
                 errorOrSuccess = 7;
-                deviceResponse = 'This command is unavailable on your device';
+                deviceResponse = 'This command is unavailable with your device version.';
             end
-        end  
-      function [errorOrSuccess, deviceResponse] = calcMinWaitTime(numberOfPulses, frequency, self)
-              energyPowerTable = [  0.0,   0.0,   0.1,   0.2,   0.4,   0.6,   0.9,   1.2,   1.6,   2.0,...
-                 2.5,   3.0,   3.6,   4.3,   4.9,   5.7,   6.4,   7.3,   8.2,   9.1,...
-                 10.1,  11.1,  12.2,  13.3,  14.5,  15.7,  17.0,  18.4,  19.7,  21.2,...
-                 22.7,  24.2,  25.8,  27.4,  29.1,  30.8,  32.6,  34.5,  36.4,  38.3,...
-                 40.3,  42.3,  44.4,  46.6,  48.8,  51.0,  53.3,  55.6,  58.0,  60.5,...
-                 63.0,  65.5,  68.1,  70.7,  73.4,  76.2,  79.0,  81.8,  84.7,  87.7,...
-                 90.7,  93.7,  96.8, 100.0, 103.2, 106.4, 109.7, 113.0, 116.4, 119.9,...
-                 123.4, 126.9, 130.5, 134.2, 137.9, 141.7, 145.5, 149.3, 153.2, 157.2,...
-                 161.2, 165.2, 169.3, 173.5, 177.7, 181.9, 186.3, 190.6, 195.0, 199.5,...
-                 204.0, 208.5, 213.1, 217.8, 222.5, 227.3, 232.1, 236.9, 241.9, 246.8, 252];
-             
-             [~, deviceResponse] = self.getParameters;
-             ePulse = energyPowerTable(deviceResponse.PowerA + 1);
-             
-            deviceResponse = (numberOfPulses* (frequency*ePulse -1050))/1050*frequency; 
-            if deviceResponse<0.5
-                warning('Your input parameters result in a minimum wait time less tha 500ms');
-                warning('The Rapid will enforce a 500ms minimum wait time and does not allow train parameters to be changed during this time.');
-            end
-            errorOrSuccess = 0;
-                       
         end
     end
     
@@ -665,9 +442,7 @@ classdef rapid < magstim & handle
         	fprintf(self.port, self.controlCommand);    
             fread(self.port, self.controlBytes);
         end
-    end
-    
-    methods (Access = 'protected')
+
         %%
         function info = parseResponse(self, command, readData)
             %% Asking For Version?
@@ -686,7 +461,7 @@ classdef rapid < magstim & handle
                                                         'ErrorType',           statusCode(7),...
                                                         'RemoteControlStatus', statusCode(8)));
                 %% Is Rapid Status Returned With This Command?
-                if ismember(command,['\', '[', 'D', 'B', '^', '_', 'x'])
+                if ismember(command,['\', '[', 'D', 'B', '^', '_', 'x', 'n'])
                     statusCode = bitget(double(readData(2)),1:8);
                     info.RapidStatus = struct('EnhancedPowerMode',     statusCode(1),...
                                               'Train',                 statusCode(2),...
@@ -700,18 +475,18 @@ classdef rapid < magstim & handle
                 %% Get Remaining Information
                 %Get commands
                 if command == '\' %getParameters
-                    info.PowerA = str2double(char(readData(3:5)));
+                    info.PowerA    = str2double(char(readData(3:5)));
                     info.Frequency = str2double(char(readData(6:9))) / 10;
                     if self.version{1} >= 9
-                        info.NPulses = str2double(char(readData(10:14)));
+                        info.NPulses  = str2double(char(readData(10:14)));
                         info.Duration = str2double(char(readData(15:18))) / 10;
                         info.WaitTime = str2double(char(readData(19:22))) / 10;
                     elseif self.version{1} >= 7
-                        info.NPulses = str2double(char(readData(10:13)));
+                        info.NPulses  = str2double(char(readData(10:13)));
                         info.Duration = str2double(char(readData(14:16))) / 10;
                         info.WaitTime = str2double(char(readData(17:20))) / 10;
                     else
-                        info.NPulses = str2double(char(readData(10:13)));
+                        info.NPulses  = str2double(char(readData(10:13)));
                         info.Duration = str2double(char(readData(14:16))) / 10;
                         info.WaitTime = str2double(char(readData(17:19))) / 10;
                     end
@@ -725,15 +500,28 @@ classdef rapid < magstim & handle
                     info.SystemStatus = struct('Plus1ModuleDetected',      statusCode(1),...
                                                'SpecialTriggerModeActive', statusCode(2),...
                                                'ChargeDelaySet',           statusCode(3));
-                elseif command == '0'  %getChargeDelay
+                elseif command == 'o'  %getChargeDelay
                     if self.version{1} >= 10
-                        info.ChargeDelay = str2double(char(readData(2:5)));
+                        info.ChargeDelay = str2double(char(readData(2:6)));
                     else
-                        info.ChargeDelay = str2double(char(readData(2:4)));
+                        info.ChargeDelay = str2double(char(readData(2:5)));
                     end
                 end
             end
         end
     end
     
+    methods (Static)
+        %% Calculate Minimum Wait Time 
+        function [errorOrSuccess, deviceResponse] = calcMinWaitTime(power, frequency, nPulses)
+            ePulse = rapid.energyPowerTable(power + 1);
+            deviceResponse = (nPulses * ((frequency * ePulse) - 1050)) / (1050 * frequency); 
+            if deviceResponse < 0.5
+                warning('Your input parameters result in a minimum wait time less tha 500ms.');
+                warning('The Rapid will enforce a 500ms minimum wait time and does not allow train parameters to be changed during this time.');
+                deviceResponse = 0.5;
+            end
+            errorOrSuccess = 0;
+        end
+    end
 end
