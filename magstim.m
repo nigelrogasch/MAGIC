@@ -364,13 +364,13 @@ classdef magstim < handle
             else 
                 readData = char(fread(self.port, bytesExpected - 1));
                 if strcmp(readData(1),'?')
-                    errorOrSuccess = 4;
+                    errorOrSuccess = 3;
                     deviceResponse = 'Supplied data value not acceptable.';
                 elseif strcmp(readData(1),'S')
-                    errorOrSuccess = 5;
+                    errorOrSuccess = 4;
                     deviceResponse = 'Command conflicts with current device settings.';
                 elseif length(readData) < (bytesExpected - 1)
-                    errorOrSuccess = 3;
+                    errorOrSuccess = 5;
                     deviceResponse = 'Incomplete response from device.';
                 elseif readData(end) ~= magstim.calcCRC([commandAcknowledge readData(1:end-1)'])
                     errorOrSuccess = 6;
