@@ -405,13 +405,15 @@ classdef rapid < magstim & handle
                         error('Maximum chargeDelay is 10000 ms.');
                     end
                     padding = '%05s';
+		    returnBytes = 6;
                 else
                     if chargeDelay > 2000
                         error('Maximum chargeDelay is 2000 ms.');
                     end
                     padding = '%04s';
+		    returnBytes = 4;
                 end
-                [errorOrSuccess, deviceResponse] = self.processCommand(['n' sprintf(padding,num2str(chargeDelay))], getResponse, 4);
+                [errorOrSuccess, deviceResponse] = self.processCommand(['n' sprintf(padding,num2str(chargeDelay))], getResponse, returnBytes);
             else
                 errorOrSuccess = 7;
                 deviceResponse = 'This command is unavailable with your device version.';
@@ -495,7 +497,7 @@ classdef rapid < magstim & handle
                     info.CoilTemp2 = str2double(char(readData(5:7))) / 10;
                 elseif command == 'I'  %getErrorCode
                     info.ErrorCode = char(readData(2:4));
-                elseif command == 'x'  %getSystemStatus
+                elseif command == 'x' || ((command == 'n') && (self.version{1} >= 10))  %getSystemStatus or setChargeDelay
                     statusCode = bitget(double(readData(4)),1:8);
                     info.SystemStatus = struct('Plus1ModuleDetected',      statusCode(1),...
                                                'SpecialTriggerModeActive', statusCode(2),...
