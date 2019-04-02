@@ -682,12 +682,25 @@ classdef magventure < handle
                [errorOrSuccess, deviceResponse] =  self.processCommand(commandLength,commandBytes,getResponse,8);
                
        end
-   
-       %% 9.a.1 : Setting Mode
-       function [errorOrSuccess, deviceResponse] = setMode(self, mode,varargin)
+      
+       
+       
+ %% 9.a.1 : Setting Mode
+       function [errorOrSuccess, deviceResponse] = setMode(self, mode, currentDirection, burstPulses,...
+               ipiValue, BARatioValue, varargin)
             % Inputs:
             % mode <char>: defines the desired working mode. Valid inputs in magventure:
             % 'Standard','Power','Twin','Dual'
+            % currentDirection <char>: defines current direction of the device in the current status.
+            % Valid inputs in magventure:'Normal','Reverse'
+            % burstPulses <int>: Biphasic Burst index in the current status of the device which can 
+            % be 2,3,4, or 5 pulses in each stimulation. 
+            % ipiValue <int>: represents Inter Pulse Interval of the current status of the device 
+            % which defines the duration between the beginning of the first pulse to the beginning of 
+            % the second pulse.
+            % BARatioValue <int>: when working in Twin Mode, the amplitude of the two pulses A and B are 
+            % controlled in an adjustable ratio between 0.2-5.0. "Pulse B" is now adjusted to a selected 
+            % percent ratio proportional to "Pulse A".
             % varargin<bool>: refers to getResponse<bool> that can be True (1) or False (0)
             % indicating whether a response from device is required or not.
             % The default value is set to false.
@@ -740,15 +753,33 @@ classdef magventure < handle
                setVal = '01';
 
                %% Creating Output
-               rawInfo = self.getInfo;
-               model = rawInfo.Model; %5th Byte of getInfo response
-               currentDir = rawInfo.currentDirection;
+              [errorOrSuccess, rawInfo] = self.getStatusSetGet;
+              if errorOrSuccess~=0
+                 error('Could Not Retrieve Required Info From the Device');
+              end
+               
+               model = rawInfo.Model; 
                waveform = rawInfo.Waveform;
-               burstPulses = rawInfo.burstPulsesIndex;
-               ipi_M = rawInfo.ipiValue_MSB;
-               ipi_L = rawInfo.ipiValue_LSB;
-               BARatio_M = rawInfo.BARatio_MSB;
-               BARatio_L = rawInfo.BARatio_LSB;
+               
+               currentDir = currentDirection;
+               
+              switch burstPulses
+                case 2
+                    burstPulseIndex = '03';
+                case 3
+                    burstPulseIndex = '02';
+                case 4
+                    burstPulseIndex = '01';
+                case 5
+                    burstPulseIndex = '00';
+              end
+               
+               ipi = dec2hex((ipiValue*10),4);
+               ipi_M = ipi(1:2);
+               ipi_L = ipi(3:4);
+               BARatio = dec2hex((BARatioValue*100),4);
+               BARatio_M = BARatio(1:2);
+               BARatio_L = BARatio(3:4);
                
                 %% Reconnect the stimulator 
                 if getResponse
@@ -758,7 +789,7 @@ classdef magventure < handle
                 end
                %%
             
-               commandBytes = [commandID;setVal;model;modeN;currentDir;waveform;burstPulses;ipi_M;ipi_L;...
+               commandBytes = [commandID;setVal;model;modeN;currentDir;waveform;burstPulseIndex;ipi_M;ipi_L;...
                    BARatio_M;BARatio_L];
                
                [errorOrSuccess, deviceResponse] =  self.processCommand(commandLength,commandBytes,getResponse,14);
@@ -807,13 +838,26 @@ classdef magventure < handle
             deviceResponse = deviceResponse.Mode;
         end
         
+        
        
        
        %% 9.b.1 : Setting Waveform
-       function [errorOrSuccess, deviceResponse] = setWaveform(self,waveform,varargin)
+       function [errorOrSuccess, deviceResponse] = setWaveform(self,waveform,currentDirection,burstPulses,...
+               ipiValue,BARatioValue,varargin)
+   
             % Inputs:
             % waveform <char>: defines the desired waveform. Valid inputs in magventure:
             % 'Monophasic','Biphasic','HalfSine','BiphasicBurst'
+            % currentDirection <char>: defines current direction of the device in the current status.
+            % Valid inputs in magventure:'Normal','Reverse'
+            % burstPulses <int>: Biphasic Burst index in the current status of the device which can 
+            % be 2,3,4, or 5 pulses in each stimulation. 
+            % ipiValue <int>: represents Inter Pulse Interval of the current status of the device 
+            % which defines the duration between the beginning of the first pulse to the beginning of 
+            % the second pulse.
+            % BARatioValue <int>: when working in Twin Mode, the amplitude of the two pulses A and B are 
+            % controlled in an adjustable ratio between 0.2-5.0. "Pulse B" is now adjusted to a selected 
+            % percent ratio proportional to "Pulse A".
             % varargin<bool>: refers to getResponse<bool> that can be True (1) or False (0)
             % indicating whether a response from device is required or not.
             % The default value is set to false.
@@ -864,15 +908,34 @@ classdef magventure < handle
                commandLength = '0B'; 
                commandID = '09';
                setVal = '01';
-               rawInfo = self.getInfo;
-               model = rawInfo.Model; %5th Byte of getInfo response
-               mode = rawInfo.Mode;
-               currentDir = rawInfo.currentDirection;
-               burstPulses = rawInfo.burstPulsesIndex;
-               ipi_M = rawInfo.ipiValue_MSB;
-               ipi_L = rawInfo.ipiValue_LSB;
-               BARatio_M = rawInfo.BARatio_MSB;
-               BARatio_L = rawInfo.BARatio_LSB;
+               
+               %% Creating Output
+              [errorOrSuccess, rawInfo] = self.getStatusSetGet;
+              if errorOrSuccess~=0
+                 error('Could Not Retrieve Required Info From the Device');
+              end
+               
+               model = rawInfo.Model; 
+               mode = rawInfo.Mode;               
+               currentDir = currentDirection;
+              switch burstPulses
+                case 2
+                    burstPulseIndex = '03';
+                case 3
+                    burstPulseIndex = '02';
+                case 4
+                    burstPulseIndex = '01';
+                case 5
+                    burstPulseIndex = '00';
+              end
+               ipi = dec2hex((ipiValue*10),4);
+               ipi_M = ipi(1:2);
+               ipi_L = ipi(3:4);
+               BARatio = dec2hex((BARatioValue*100),4);
+               BARatio_M = BARatio(1:2);
+               BARatio_L = BARatio(3:4);
+               
+              
                
                 %% Reconnect the stimulator 
                 if getResponse
@@ -882,7 +945,7 @@ classdef magventure < handle
                 end
                %%
             
-               commandBytes = [commandID;setVal;model;mode;currentDir;waveformN;burstPulses;ipi_M;ipi_L;BARatio_M;BARatio_L];
+               commandBytes = [commandID;setVal;model;mode;currentDir;waveformN;burstPulseIndex;ipi_M;ipi_L;BARatio_M;BARatio_L];
                
                [errorOrSuccess, deviceResponse] =  self.processCommand(commandLength,commandBytes,getResponse,14);
                
@@ -937,11 +1000,22 @@ classdef magventure < handle
             deviceResponse = deviceResponse.Waveform;
         end
        
+       
        %% 9.c.1 : Setting Current Direction
-       function [errorOrSuccess, deviceResponse] = setCurrentDir(self,currentDir,varargin)
+       function [errorOrSuccess, deviceResponse] = setCurrentDir(self,currentDir,burstPulses,...
+               ipiValue, BARatioValue,varargin)
+           
             % Inputs:
             % currentDir <char>: defines the desired current direction. Valid inputs in magventure:
             % 'Normal','Reverse'
+            % burstPulses <int>: Biphasic Burst index in the current status of the device which can 
+            % be 2,3,4, or 5 pulses in each stimulation. 
+            % ipiValue <int>: represents Inter Pulse Interval of the current status of the device 
+            % which defines the duration between the beginning of the first pulse to the beginning of 
+            % the second pulse.
+            % BARatioValue <int>: when working in Twin Mode, the amplitude of the two pulses A and B are 
+            % controlled in an adjustable ratio between 0.2-5.0. "Pulse B" is now adjusted to a selected 
+            % percent ratio proportional to "Pulse A".
             % varargin<bool>: refers to getResponse<bool> that can be True (1) or False (0)
             % indicating whether a response from device is required or not.
             % The default value is set to false.
@@ -988,15 +1062,33 @@ classdef magventure < handle
                commandLength = '0B'; 
                commandID = '09';
                setVal = '01';
-               rawInfo = self.getInfo;
-               model = rawInfo.Model; %5th Byte of getInfo response
+               
+            %% Create Output
+               [errorOrSuccess, rawInfo] = self.getStatusSetGet;
+               if errorOrSuccess~=0
+                 error('Could Not Retrieve Required Info From the Device');
+               end
+               model = rawInfo.Model; 
                mode = rawInfo.Mode;
                waveform = rawInfo.Waveform;
-               burstPulses = rawInfo.burstPulsesIndex;
-               ipi_M = rawInfo.ipiValue_MSB;
-               ipi_L = rawInfo.ipiValue_LSB;
-               BARatio_M = rawInfo.BARatio_MSB;
-               BARatio_L = rawInfo.BARatio_LSB;
+               
+               switch burstPulses
+                case 2
+                    burstPulseIndex = '03';
+                case 3
+                    burstPulseIndex = '02';
+                case 4
+                    burstPulseIndex = '01';
+                case 5
+                    burstPulseIndex = '00';
+               end
+               ipi = dec2hex((ipiValue*10),4);
+               ipi_M = ipi(1:2);
+               ipi_L = ipi(3:4);
+               BARatio = dec2hex((BARatioValue*100),4);
+               BARatio_M = BARatio(1:2);
+               BARatio_L = BARatio(3:4);   
+              
                
                 %% Reconnect the stimulator 
                 if getResponse
@@ -1006,7 +1098,7 @@ classdef magventure < handle
                 end
                %%
             
-               commandBytes = [commandID;setVal;model;mode;currentDirN;waveform;burstPulses;ipi_M;ipi_L;...
+               commandBytes = [commandID;setVal;model;mode;currentDirN;waveform;burstPulseIndex;ipi_M;ipi_L;...
                    BARatio_M;BARatio_L];
                
                [errorOrSuccess, deviceResponse] =  self.processCommand(commandLength,commandBytes,getResponse,14);
@@ -1056,10 +1148,19 @@ classdef magventure < handle
        end
         
        %% 9.d.1 : Setting Burst Pulses 
-       function [errorOrSuccess, deviceResponse] = setBurst(self,burstPulses,varargin)
+       function [errorOrSuccess, deviceResponse] = setBurst(self,burstPulses,currentDirection,...
+               ipiValue,BARatioValue,varargin)
             % Inputs:
-            % burstPulseIndex <int>: Biphasic Burst can be selected with 2,3,4, or 5 pulses in each stimulation. 
+            % burstPulse <int>: Biphasic Burst can be selected with 2,3,4, or 5 pulses in each stimulation. 
             % Valid inputs in magventure: 2,3,4,5
+            % currentDirection <char>: defines current direction of the device in the current status.
+            % Valid inputs in magventure:'Normal','Reverse'
+            % ipiValue <int>: represents Inter Pulse Interval of the current status of the device 
+            % which defines the duration between the beginning of the first pulse to the beginning of 
+            % the second pulse.
+            % BARatioValue <int>: when working in Twin Mode, the amplitude of the two pulses A and B are 
+            % controlled in an adjustable ratio between 0.2-5.0. "Pulse B" is now adjusted to a selected 
+            % percent ratio proportional to "Pulse A".
             % varargin<bool>: refers to getResponse<bool> that can be True (1) or False (0)
             % indicating whether a response from device is required or not.
             % The default value is set to false.
@@ -1110,23 +1211,32 @@ classdef magventure < handle
                commandLength = '0B'; 
                commandID = '09';
                setVal = '01';
-               rawInfo = self.getInfo;
-               model = rawInfo.Model; %5th Byte of getInfo response
-               mode = rawInfo.Mode;
-               currentDir = rawInfo.currentDirection;
-               waveform = rawInfo.Waveform;
-               ipi_M = rawInfo.ipiValue_MSB;
-               ipi_L = rawInfo.ipiValue_LSB;
-               BARatio_M = rawInfo.BARatio_MSB;
-               BARatio_L = rawInfo.BARatio_LSB;
-                
                
-                %% Reconnect the stimulator 
-                if getResponse
+               
+              %% Creating Output
+              [errorOrSuccess, rawInfo] = self.getStatusSetGet;
+              if errorOrSuccess~=0
+                 error('Could Not Retrieve Required Info From the Device');
+              end
+               
+               model = rawInfo.Model; 
+               mode = rawInfo.Mode;
+               waveform = rawInfo.Waveform;
+               
+               currentDir = currentDirection;
+               ipi = dec2hex((ipiValue*10),4);
+               ipi_M = ipi(1:2);
+               ipi_L = ipi(3:4);
+               BARatio = dec2hex((BARatioValue*100),4);
+               BARatio_M = BARatio(1:2);
+               BARatio_L = BARatio(3:4);
+               
+               %% Reconnect the stimulator 
+               if getResponse
                  self.disconnect();
                  self.connect();
                  warning('In case of any problems, try reconnecting the device manually');
-                end
+               end
                %%
             
                commandBytes = [commandID;setVal;model;mode;currentDir;waveform;burstPulseIndex;ipi_M;ipi_L;...
@@ -1136,7 +1246,7 @@ classdef magventure < handle
                
        end
        %% 9.d.2 : Getting Burst Pulses 
-       function [errorOrSuccess, deviceResponse] = getBurst(self)
+   function [errorOrSuccess, deviceResponse] = getBurst(self)
             
             % Outputs:
             % deviceResponse: is the response that is sent back by the
@@ -1179,11 +1289,20 @@ classdef magventure < handle
        end
         
        
+       
        %% 9.e.1 : Setting Interpulse Interval
-       function [errorOrSuccess, deviceResponse] = setIPI(self,ipi,varargin)
+       function [errorOrSuccess, deviceResponse] = setIPI(self,ipi,currentDirection, burstPulses,...
+             BARatioValue,varargin)
             % Inputs:
             % ipi <int>: represents Inter Pulse Interval which defines the duration between 
             % the beginning of the first pulse to the beginning of the second pulse.
+            % currentDirection <char>: defines current direction of the device in the current status.
+            % Valid inputs in magventure:'Normal','Reverse'
+            % burstPulses <int>: Biphasic Burst index in the current status of the device which can 
+            % be 2,3,4, or 5 pulses in each stimulation. 
+            % BARatioValue <int>: when working in Twin Mode, the amplitude of the two pulses A and B are 
+            % controlled in an adjustable ratio between 0.2-5.0. "Pulse B" is now adjusted to a selected 
+            % percent ratio proportional to "Pulse A".
             % varargin<bool>: refers to getResponse<bool> that can be True (1) or False (0)
             % indicating whether a response from device is required or not.
             % The default value is set to false.
@@ -1229,24 +1348,42 @@ classdef magventure < handle
                commandLength = '0B'; 
                commandID = '09';
                setVal = '01';
-               rawInfo = self.getInfo;
-               model = rawInfo.Model; %5th Byte of getInfo response
-               mode = rawInfo.Mode;
-               currentDir = rawInfo.currentDirection;
-               waveform = rawInfo.Waveform;
-               burstPulses = rawInfo.burstPulsesIndex;
-               BARatio_M = rawInfo.BARatio_MSB;
-               BARatio_L = rawInfo.BARatio_LSB;
                
-                %% Reconnect the stimulator 
-                if getResponse
+                %% Creating Output
+              [errorOrSuccess, rawInfo] = self.getStatusSetGet;
+              if errorOrSuccess~=0
+                 error('Could Not Retrieve Required Info From the Device');
+              end
+               
+               model = rawInfo.Model; 
+               mode = rawInfo.Mode;
+               waveform = rawInfo.Waveform;
+               
+               currentDir = currentDirection;
+               switch burstPulses
+                  case 2
+                    burstPulseIndex = '03';
+                  case 3
+                    burstPulseIndex = '02';
+                  case 4
+                    burstPulseIndex = '01';
+                  case 5
+                    burstPulseIndex = '00';
+               end
+               BARatio = dec2hex((BARatioValue*100),4);
+               BARatio_M = BARatio(1:2);
+               BARatio_L = BARatio(3:4);
+               
+               
+               %% Reconnect the stimulator 
+               if getResponse
                  self.disconnect();
                  self.connect();
                  warning('In case of any problems, try reconnecting the device manually');
-                end
+               end
                %%
             
-               commandBytes = [commandID;setVal;model;mode;currentDir;waveform;burstPulses;ipi_M;ipi_L;...
+               commandBytes = [commandID;setVal;model;mode;currentDir;waveform;burstPulseIndex;ipi_M;ipi_L;...
                    BARatio_M;BARatio_L];
                
                [errorOrSuccess, deviceResponse] =  self.processCommand(commandLength,commandBytes,getResponse,14);
@@ -1295,11 +1432,19 @@ classdef magventure < handle
        end
        
        %% 9.f.1 : Setting B/A Ratio
-       function [errorOrSuccess, deviceResponse] = setBARatio(self,BARatio,varargin)
+       function [errorOrSuccess, deviceResponse] = setBARatio(self,BARatio,currentDirection, burstPulses,...
+               ipiValue,varargin)
             % Inputs:
             % BARatio <int>: when working in Twin Mode, the amplitude of the two pulses A and B are controlled in an 
             % adjustable ratio between 0.2-5.0. "Pulse B" is now adjusting to a selected percent ratio 
-            % proportional to "Pulse A
+            % proportional to "Pulse A"
+            % currentDirection <char>: defines current direction of the device in the current status.
+            % Valid inputs in magventure:'Normal','Reverse'
+            % burstPulses <int>: Biphasic Burst index in the current status of the device which can 
+            % be 2,3,4, or 5 pulses in each stimulation. 
+            % ipiValue <int>: represents Inter Pulse Interval of the current status of the device 
+            % which defines the duration between the beginning of the first pulse to the beginning of 
+            % the second pulse.
             % varargin<bool>: refers to getResponse<bool> that can be True (1) or False (0)
             % indicating whether a response from device is required or not.
             % The default value is set to false.
@@ -1345,32 +1490,48 @@ classdef magventure < handle
                commandLength = '0B'; 
                commandID = '09';
                setVal = '01';
-               rawInfo = self.getInfo;
-               model = rawInfo.Model; %5th Byte of getInfo response
-               mode = rawInfo.Mode;
-               currentDir = rawInfo.currentDirection;
-               waveform = rawInfo.Waveform;
-               burstPulses = rawInfo.burstPulsesIndex;
-               ipi_M = rawInfo.ipiValue_MSB;
-               ipi_L = rawInfo.ipiValue_LSB;
-              
                
-                %% Reconnect the stimulator 
-                if getResponse
+            %% Creating Output
+               [errorOrSuccess, rawInfo] = self.getStatusSetGet;
+               if errorOrSuccess~=0
+                 error('Could Not Retrieve Required Info From the Device');
+               end
+               
+               model = rawInfo.Model;
+               mode = rawInfo.Mode;
+               waveform = rawInfo.Waveform;
+               
+               currentDir = currentDirection;
+               switch burstPulses
+                 case 2
+                    burstPulseIndex = '03';
+                 case 3
+                    burstPulseIndex = '02';
+                 case 4
+                    burstPulseIndex = '01';
+                 case 5
+                    burstPulseIndex = '00';
+               end    
+               ipi = dec2hex((ipiValue*10),4);
+               ipi_M = ipi(1:2);
+               ipi_L = ipi(3:4);
+               
+               %% Reconnect the stimulator 
+               if getResponse
                  self.disconnect();
                  self.connect();
                  warning('In case of any problems, try reconnecting the device manually');
-                end
+               end
                %%
             
-               commandBytes = [commandID;setVal;model;mode;currentDir;waveform;burstPulses;ipi_M;ipi_L;...
+               commandBytes = [commandID;setVal;model;mode;currentDir;waveform;burstPulseIndex;ipi_M;ipi_L;...
                    BARatio_M;BARatio_L];
                
                [errorOrSuccess, deviceResponse] =  self.processCommand(commandLength,commandBytes,getResponse,14);
                
        end       
        %% 9.f.2 : Getting B/A Ratio
-       function [errorOrSuccess, deviceResponse] = getBARatio(self)
+        function [errorOrSuccess, deviceResponse] = getBARatio(self)
             
             % Outputs:
             % deviceResponse: is the response that is sent back by the
@@ -1483,7 +1644,29 @@ classdef magventure < handle
                                deviceResponse = 'No response detected from device.';
                         
                        end
-                     
+                elseif getResponse == 3   %% In the set/get internal call 
+                    %% Wait for the response from the stimulator for 3 s                        
+                        elapsedTime = 0.0;
+                        tic;
+                        while elapsedTime < 3
+                                elapsedTime = toc;
+                        end
+ 
+                     %% Read the response from the stimulator if any
+                        if self.port.BytesAvailable > 0
+                           readData = fread(self.port,bytesExpected); 
+                           if length(readData) < (bytesExpected)
+                                errorOrSuccess = 2;
+                                deviceResponse = 'Incomplete response from device.';
+                           else
+                                errorOrSuccess = 0;
+                                [deviceResponse,~] = self.parseResponse(readData);
+                           end
+                        else
+                               errorOrSuccess = 1;
+                               deviceResponse = 'No response detected from device.';
+                        end
+                 
                 else % getResponse = 0
                         errorOrSuccess = 0;
                         deviceResponse ='No response from device required';
@@ -1553,6 +1736,10 @@ classdef magventure < handle
                info = struct('Mode',mode,'Waveform',waveform,'Status',Status,'Model',model,...
                          'SerialNo',serialNo,'Temperature',temperature,'coilTypeNo',coilTypeNo,...
                          'amplitudePercentage_A',AmplitudeA,'amplitudePercentage_B',AmplitudeB);
+                     
+               rawInfo = struct('Model',dec2hex(modelBits,2),'Mode',dec2hex(modeBits,2),...
+                         'Waveform',dec2hex(waveformBits,2));
+           
                elseif readData(3)== 5
                   originalAmplitudeA = readData(12);
                   originalAmplitudeB = readData(13);
@@ -1880,6 +2067,27 @@ classdef magventure < handle
             
             
          end
+         
+         %% Get info from device in set/get commands
+         function [errorOrSuccess, deviceResponse] = getStatusSetGet(self)
+            % Outputs:
+            % deviceResponse: is the response that is sent back by the
+            % device to the port indicating current information about the device
+            % errorOrSuccess: is a boolean value indicating succecc = 0 or error = 1
+            % in performing the desired task
+        %% Reconnect the stimulator
+            self.disconnect();
+            self.connect();
+            warning('In case of any problems, try reconnecting the device manually');
+        %% Create Control Command
+            commandLength = '01'; 
+            commandID = '00';               
+            commandBytes = commandID;
+            
+            getResponse = 3;
+            [errorOrSuccess, deviceResponse] =  self.processCommand(commandLength,commandBytes,getResponse,13); 
+           
+       end
 end    
    
    methods (Static)
