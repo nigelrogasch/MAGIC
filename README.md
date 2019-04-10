@@ -7,7 +7,7 @@ To download MAGIC, visit the MAGIC release page: [https://github.com/nigelrogasc
 ## WIKI
 Further information on using MAGIC can be found on the Wiki: [https://github.com/nigelrogasch/MAGIC/wiki](https://github.com/nigelrogasch/MAGIC/wiki) 
 
-## Contributions to Coding
+## CONTRIBUTIONS TO CODING
 This toolbox was co-implemented by:
 - Forough Habibollahi Saatlou & Nicolas A. McNair
 - Nigel C. Rogasch
@@ -19,3 +19,6 @@ This toolbox was co-implemented by:
 ## CITE MAGIC
 If you find this toolbox useful, please also consider citing our paper at https://doi.org/10.1016/j.brs.2018.05.015. 
 > Saatlou, Forough Habibollahi, Nigel C. Rogasch, Mana Biabani, Nicolas A. McNair, Steven D. Pillen, Tom R. Marshall, and Til O. Bergmann. "MAGIC: An open-source MATLAB toolbox for external control of transcranial magnetic stimulation devices." Brain Stimulation (2018).
+
+## REPORT A BUG
+If you find a bug in MAGIC, please let us know via the Issues tab: [https://github.com/nigelrogasch/MAGIC/issues] (https://github.com/nigelrogasch/MAGIC/issues) 
