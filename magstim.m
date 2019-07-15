@@ -20,18 +20,11 @@ classdef magstim < handle
     methods 
         function self = magstim(PortID)
             % PortID <char> defines the serail port id on your computer
-           
-            %% Find All Available Serial Ports On Your Computer
-            foundPorts = instrhwinfo('serial');
-            listOfComPorts = foundPorts.AvailableSerialPorts;
-            
+                     
             %% Check Input Validity:
             narginchk(1, 1);
-            if ~ischar(PortID) || (~isstring(PortID) && (numel(PortID) == 1))
+            if ~ischar(PortID) || (exist('string','class') && (~isstring(PortID) && (numel(PortID) == 1))
                 error('The serial port ID must be a character or string array.');
-            end
-            if ~any(strcmp(listOfComPorts, PortID))
-                error('Serial com port ID not found.');
             end
             
             self.portID = PortID;
