@@ -23,7 +23,7 @@ classdef magstim < handle
                      
             %% Check Input Validity:
             narginchk(1, 1);
-            if ~ischar(PortID) || (exist('string','class') && (~isstring(PortID) && (numel(PortID) == 1))
+            if ~ischar(PortID) || (exist('string','class') && ~isstring(PortID) && (numel(PortID) == 1))
                 error('The serial port ID must be a character or string array.');
             end
             
