@@ -306,10 +306,6 @@ classdef duomag < handle
         %% 4.Setting Charge delay Parameters
         function [errorOrSuccess, deviceResponse] = set_ChargeDelay(self,chargeDelay,varargin)
             % Inputs:
-            % trigInDelay <int>: allows setting a delay in milliseconds from the time
-            % of arrival of an external trigger input to the time for the magnetic stimulation to be provided.
-            % trigOutDelay <signed int>: allows setting a delay in milliseconds from
-            % the time of the magnetic stimulation to the time of the external trigger to be provided.
             % chargeDelay <int>: defines the time in milliseconds to make the device wait, before
             % recharging.
             % varargin<bool>: refers to getResponse<bool> that can be True (1) or False (0)
@@ -437,13 +433,13 @@ classdef duomag < handle
             
         end
         %% 5.Setting Trig Out Delay Parameters
-        function [errorOrSuccess, deviceResponse] = set_TriggerOutDelay(self,chargeDelay,varargin)
+        function [errorOrSuccess, deviceResponse] = set_TriggerOutDelay(self,triggerOutDelay,varargin)
             % Inputs:
             % trigInDelay <int>: allows setting a delay in milliseconds from the time
             % of arrival of an external trigger input to the time for the magnetic stimulation to be provided.
             % trigOutDelay <signed int>: allows setting a delay in milliseconds from
             % the time of the magnetic stimulation to the time of the external trigger to be provided.
-            % chargeDelay <int>: defines the time in milliseconds to make the device wait, before
+            % triggerOutDelay <int>: defines the time in milliseconds to make the device wait, before
             % recharging.
             % varargin<bool>: refers to getResponse<bool> that can be True (1) or False (0)
             % indicating whether a response from device is required or not.
@@ -477,7 +473,7 @@ classdef duomag < handle
                 warning('In case of any problems, try reconnecting the device manually');
             end
             %%
-            if (length(trigInDelay)~=1 || length(trigOutDelay)~=1 || length(chargeDelay)~=1)
+            if (length(trigInDelay)~=1 || length(trigOutDelay)~=1 || length(triggerOutDelay)~=1)
                 error('All Trig & Charge Parameters Must Be Of length 1');
             end
             if  rem(trigInDelay,1)~=0 || trigInDelay<0
@@ -492,11 +488,11 @@ classdef duomag < handle
             if (trigOutDelay>65535)
                 error('trigOutDelay Out Of Bounds');
             end
-            if  rem(chargeDelay,1)~=0 || chargeDelay<0
+            if  rem(triggerOutDelay,1)~=0 || triggerOutDelay<0
                 error('The Charge Delay of Trains Must Be A Whole Positive Integer');
             end
-            if (chargeDelay>65535)
-                error('chargeDelay Out Of Bounds');
+            if (triggerOutDelay>65535)
+                error('triggerOutDelay Out Of Bounds');
             end
             
             %% Create Control Command
@@ -522,9 +518,9 @@ classdef duomag < handle
             %    05.00
             %    10.00
             
-            chargeDelayGCM=chargeDelay/0.05;
-            if isinteger(chargeDelayGCM)
-                steps=chargeDelayGCM;
+            triggerOutDelayGCM=triggerOutDelay/0.05;
+            if isinteger(triggerOutDelayGCM)
+                steps=triggerOutDelayGCM;
                 stepSize=0.05;
             else
                 error('Minimum resolution of recharge delay is 0.05 ms, therefore current recharge could not be set accurately');
