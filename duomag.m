@@ -18,9 +18,12 @@ classdef duomag < handle
             % PortID <char> defines the serail port id on your computer
             
             %% Find All Available etISerial Ports On Your Computer
-            
-            FoundPorts = instrhwinfo('serial');
-            ListOfComPorts = FoundPorts.AvailableSerialPorts;
+            try
+                FoundPorts = instrhwinfo('serial');
+                ListOfComPorts = FoundPorts.AvailableSerialPorts;
+            catch
+                ListOfComPorts=PortID;
+            end
             
             %% Check Input Validity:
             if nargin <1
@@ -327,7 +330,7 @@ classdef duomag < handle
             if length(varargin)>1
                 error('Too Many Input Arguments');
             end
-            if nargin <2
+            if nargin <3
                 getResponse = false ; %Default value Set To 0
             else
                 getResponse = varargin{1};
@@ -342,26 +345,7 @@ classdef duomag < handle
                 self.connect();
                 warning('In case of any problems, try reconnecting the device manually');
             end
-            %%
-            if (length(trigInDelay)~=1 || length(trigOutDelay)~=1 || length(chargeDelay)~=1)
-                error('All Trig & Charge Parameters Must Be Of length 1');
-            end
-            if  rem(trigInDelay,1)~=0 || trigInDelay<0
-                error('The Delay For Input Trig Must Be A Whole Positive Integer');
-            end
-            if (trigInDelay>65535) %Must fit into a four digit hex number
-                error('repRate Out Of Bounds');
-            end
-            if  rem(trigOutDelay,1)~=0
-                error('The Delay For Output Trig Must Be A Whole Integer');
-            end
-            if (trigOutDelay>65535)
-                error('trigOutDelay Out Of Bounds');
-            end
-            if  rem(chargeDelay,1)~=0 || chargeDelay<0
-                error('The Charge Delay of Trains Must Be A Whole Positive Integer');
-            end
-            if (chargeDelay>65535)
+            if (chargeDelay>600) || (chargeDelay<0.05)
                 error('chargeDelay Out Of Bounds');
             end
             
@@ -388,49 +372,103 @@ classdef duomag < handle
             %    05.00
             %    10.00
             
-            chargeDelayGCM=chargeDelay/0.05;
-            if isinteger(chargeDelayGCM)
-                steps=chargeDelayGCM;
-                stepSize=0.05;
-            else
-                error('Minimum resolution of recharge delay is 0.05 ms, therefore current recharge could not be set accurately');
+            vals = [0.05, 0.10, 0.20, 00.50, 01.00, 02.00, 05.00,10.00];
+            chargeDelay=557.25;
+            
+            if round(chargeDelay/vals(8))==single(chargeDelay/vals(8)), var1=ceil(chargeDelay/vals(8));
+            else, var1=floor(chargeDelay/vals(8)); end
+            var1rem=rem(chargeDelay,vals(8));
+            
+            if round(var1rem/vals(7))==single(var1rem/vals(7)), var2=ceil(var1rem/vals(7));
+            else, var2=floor(var1rem/vals(7));end
+            var2rem=rem(var1rem,vals(7));
+            
+            if round(var2rem/vals(6))==single(var2rem/vals(6)), var3=ceil(var2rem/vals(6));
+            else,var3=floor(var2rem/vals(6)); end
+            var3rem=rem(var2rem,vals(6));
+            
+            if round(var3rem/vals(5))==single(var3rem/vals(5)),var4=ceil(var3rem/vals(5));
+            else, var4=floor(var3rem/vals(5)); end
+            var4rem=rem(var3rem,vals(5));
+            
+            if round(var4rem/vals(4))==single(var4rem/vals(4)), var5=ceil((var4rem/vals(4)));
+            else, var5=floor((var4rem/vals(4))); end
+            var5rem=rem(var4rem,vals(4));
+            
+            if round(var5rem/vals(3))==single(var5rem/vals(3)), var6=ceil(var5rem/vals(3));
+            else, var6=floor(var5rem/vals(3));end
+            var6rem=rem(var5rem,vals(3));
+            
+            if round(var6rem/vals(2))==single(var6rem/vals(2)), var7=ceil(var6rem/vals(2));
+            else, var7=floor(var6rem/vals(2)); end
+            var7rem=rem(var6rem,vals(2));
+            
+            if round(var7rem/vals(1))==single(var7rem/vals(1)), var8=ceil(var7rem/vals(1));
+            else, var8=floor(var7rem/vals(1)); end
+            var8rem=rem(var7rem,vals(1));
+            
+            breakpoint=0;
+            for i=1:8
+                varname=['var' num2str(i)];
+                if eval(varname)~=0
+                    switch i
+                        case 1
+                            stepSize=10;
+                            if var1*10==chargeDelay, breakpoint=1; end
+                        case 2
+                            stepSize=5;
+                            if var1*10 + var2*5==chargeDelay, breakpoint=1; end
+                        case 3
+                            stepSize=2;
+                            if var1*10 + var2*5 + var3*2==chargeDelay, breakpoint=1; end
+                        case 4
+                            stepSize=1;
+                            if var1*10 + var2*5 + var3*2 +var4*1==chargeDelay, breakpoint=1; end
+                        case 5
+                            stepSize=0.5;
+                            if var1*10 + var2*5 + var3*2 +var4*1 + var5*0.5==chargeDelay, breakpoint=1; end
+                        case 6
+                            stepSize=0.2;
+                            if var1*10 + var2*5 + var3*2 +var4*1 +var5*0.5+var6*0.2==chargeDelay, breakpoint=1; end
+                        case 7
+                            stepSize=0.1;
+                            if var1*10 + var2*5 + var3*2 +var4*1 +var5*0.5+var6*0.2+var7*0.1==chargeDelay, breakpoint=1; end
+                        case 8
+                            stepSize=0.05;
+                            if var1*10 + var2*5 + var3*2 +var4*1 +var5*0.5+var6*0.2+var7*0.1+var8*0.05==chargeDelay, breakpoint=1; end
+                    end
+                    setRecursiveChargeDelay(stepSize,eval(varname));
+                    if breakpoint==1, break; end
+                end
             end
-            % Fraction code (blank to start).
-            % frc = '0000000'; % blank 7-bit array
-            % Exponent codes (from Deymed manual).
-            exp = ['000';  ... % #0 (x 00.05 ms)
-                '001';  ... % #1 (x 00.10 ms)
-                '010';  ... % #2 (x 00.20 ms)
-                '011';  ... % #3 (x 00.50 ms)
-                '100';  ... % #4 (x 01.00 ms)
-                '101';  ... % #5 (x 02.00 ms)
-                '110';  ... % #6 (x 05.00 ms)
-                '111'];     % #7 (x 10.00 ms)
-            
-            % Exponent values (from Deymed manual).
-            vals = [00.05, 00.10, 00.20, 00.50, 01.00, 02.00, 05.00,10.00];
-            
-            % Get the corresponding binary code.
-            rechargeExpVal = vals == stepSize;
-            rechargeExp = exp(rechargeExpVal, :);
-            
-            % Convert fraction value to binary.
-            frc = dec2bin(steps, 7); % for 7-bit array
-            
-            % Add the fraction value to upper/lower bits.
-            upper = bin2dec(['100', frc(1:5)]); % upper bits take bits 1-5
-            
-            % Add the exp value to the lower bits.
-            lower = bin2dec(['101', rechargeExp, frc(6:7)]); % lower bits take bits 6-7
+
+            if var8rem~=0;   warning('Minimum resolution of recharge delay is 0.05 ms, therefore required charge delay could be set apprixmately'); end
             try
-                % Send commands to device.
-                fwrite(self.port, [upper upper lower lower], 'uint8'); % set bits
                 errorOrSuccess=1; deviceResponse=[];
                 if getResponse~=0, [~, deviceResponse]=self.getStatus; end
             catch
                 errorOrSuccess=0; deviceResponse=[]; warning('The process was unsuccessful, try reconnecting the device manually');
             end
-            
+            function setRecursiveChargeDelay(stepSize,steps)
+                exp = ['000';  '001';  '010'; '011'; '100'; '101';'110'; '111'];
+                
+                % Exponent values (from Deymed manual).
+                vals = [00.05, 00.10, 00.20, 00.50, 01.00, 02.00, 05.00,10.00];
+                
+                % Get the corresponding binary code.
+                rechargeExpVal = vals == stepSize;
+                rechargeExp = exp(rechargeExpVal, :);
+                
+                % Convert fraction value to binary.
+                frc = dec2bin(steps, 7); % for 7-bit array
+                
+                % Add the fraction value to upper/lower bits.
+                upper = bin2dec(['100', frc(1:5)]); % upper bits take bits 1-5
+                
+                % Add the exp value to the lower bits.
+                lower = bin2dec(['101', rechargeExp, frc(6:7)]); % lower bits take bits 6-7
+                fwrite(self.port, [upper upper lower lower], 'uint8'); % set bits
+            end
         end
         %% 5.Setting Trig Out Delay Parameters
         function [errorOrSuccess, deviceResponse] = set_TriggerOutDelay(self,triggerOutDelay,varargin)
@@ -457,13 +495,16 @@ classdef duomag < handle
             if length(varargin)>1
                 error('Too Many Input Arguments');
             end
-            if nargin <2
+            if nargin <3
                 getResponse = false ; %Default value Set To 0
             else
                 getResponse = varargin{1};
             end
             if (getResponse ~= 0 && getResponse ~= 1 )
                 error('getResponse Must Be A Boolean');
+            end
+            if (triggerOutDelay>600) || (triggerOutDelay<0.05)
+                error('chargeDelay Out Of Bounds');
             end
             
             %% Reconnect the stimulator
@@ -472,32 +513,9 @@ classdef duomag < handle
                 self.connect();
                 warning('In case of any problems, try reconnecting the device manually');
             end
-            %%
-            if (length(trigInDelay)~=1 || length(trigOutDelay)~=1 || length(triggerOutDelay)~=1)
-                error('All Trig & Charge Parameters Must Be Of length 1');
-            end
-            if  rem(trigInDelay,1)~=0 || trigInDelay<0
-                error('The Delay For Input Trig Must Be A Whole Positive Integer');
-            end
-            if (trigInDelay>65535) %Must fit into a four digit hex number
-                error('repRate Out Of Bounds');
-            end
-            if  rem(trigOutDelay,1)~=0
-                error('The Delay For Output Trig Must Be A Whole Integer');
-            end
-            if (trigOutDelay>65535)
-                error('trigOutDelay Out Of Bounds');
-            end
-            if  rem(triggerOutDelay,1)~=0 || triggerOutDelay<0
-                error('The Charge Delay of Trains Must Be A Whole Positive Integer');
-            end
-            if (triggerOutDelay>65535)
-                error('triggerOutDelay Out Of Bounds');
-            end
             
             %% Create Control Command
-            %duoRecharge  Set the recharge delay for the device
-            % duoRecharge(self.port, steps, stepSize) sets the recharge delay in
+            % sets the recharge delay in
             % milliseconds as defined by inputs STEPS and STEPSIZE. Input STEPS must be
             % a scalar value between 0-127. STEPSIZE is a value in ms which
             % is used to mutliply STEPS to the desired delay value.
@@ -518,49 +536,103 @@ classdef duomag < handle
             %    05.00
             %    10.00
             
-            triggerOutDelayGCM=triggerOutDelay/0.05;
-            if isinteger(triggerOutDelayGCM)
-                steps=triggerOutDelayGCM;
-                stepSize=0.05;
-            else
-                error('Minimum resolution of recharge delay is 0.05 ms, therefore current recharge could not be set accurately');
+            vals = [0.05, 0.10, 0.20, 00.50, 01.00, 02.00, 05.00,10.00];
+            chargeDelay=557.25;
+            
+            if round(chargeDelay/vals(8))==single(chargeDelay/vals(8)), var1=ceil(chargeDelay/vals(8));
+            else, var1=floor(chargeDelay/vals(8)); end
+            var1rem=rem(chargeDelay,vals(8));
+            
+            if round(var1rem/vals(7))==single(var1rem/vals(7)), var2=ceil(var1rem/vals(7));
+            else, var2=floor(var1rem/vals(7));end
+            var2rem=rem(var1rem,vals(7));
+            
+            if round(var2rem/vals(6))==single(var2rem/vals(6)), var3=ceil(var2rem/vals(6));
+            else,var3=floor(var2rem/vals(6)); end
+            var3rem=rem(var2rem,vals(6));
+            
+            if round(var3rem/vals(5))==single(var3rem/vals(5)),var4=ceil(var3rem/vals(5));
+            else, var4=floor(var3rem/vals(5)); end
+            var4rem=rem(var3rem,vals(5));
+            
+            if round(var4rem/vals(4))==single(var4rem/vals(4)), var5=ceil((var4rem/vals(4)));
+            else, var5=floor((var4rem/vals(4))); end
+            var5rem=rem(var4rem,vals(4));
+            
+            if round(var5rem/vals(3))==single(var5rem/vals(3)), var6=ceil(var5rem/vals(3));
+            else, var6=floor(var5rem/vals(3));end
+            var6rem=rem(var5rem,vals(3));
+            
+            if round(var6rem/vals(2))==single(var6rem/vals(2)), var7=ceil(var6rem/vals(2));
+            else, var7=floor(var6rem/vals(2)); end
+            var7rem=rem(var6rem,vals(2));
+            
+            if round(var7rem/vals(1))==single(var7rem/vals(1)), var8=ceil(var7rem/vals(1));
+            else, var8=floor(var7rem/vals(1)); end
+            var8rem=rem(var7rem,vals(1));
+            
+            breakpoint=0;
+            for i=1:8
+                varname=['var' num2str(i)];
+                if eval(varname)~=0
+                    switch i
+                        case 1
+                            stepSize=10;
+                            if var1*10==chargeDelay, breakpoint=1; end
+                        case 2
+                            stepSize=5;
+                            if var1*10 + var2*5==chargeDelay, breakpoint=1; end
+                        case 3
+                            stepSize=2;
+                            if var1*10 + var2*5 + var3*2==chargeDelay, breakpoint=1; end
+                        case 4
+                            stepSize=1;
+                            if var1*10 + var2*5 + var3*2 +var4*1==chargeDelay, breakpoint=1; end
+                        case 5
+                            stepSize=0.5;
+                            if var1*10 + var2*5 + var3*2 +var4*1 + var5*0.5==chargeDelay, breakpoint=1; end
+                        case 6
+                            stepSize=0.2;
+                            if var1*10 + var2*5 + var3*2 +var4*1 +var5*0.5+var6*0.2==chargeDelay, breakpoint=1; end
+                        case 7
+                            stepSize=0.1;
+                            if var1*10 + var2*5 + var3*2 +var4*1 +var5*0.5+var6*0.2+var7*0.1==chargeDelay, breakpoint=1; end
+                        case 8
+                            stepSize=0.05;
+                            if var1*10 + var2*5 + var3*2 +var4*1 +var5*0.5+var6*0.2+var7*0.1+var8*0.05==chargeDelay, breakpoint=1; end
+                    end
+                    setRecursiveTriggerOutDelay(stepSize,eval(varname));
+                    if breakpoint==1, break; end
+                end
             end
-            % Fraction code (blank to start).
-            % frc = '0000000'; % blank 7-bit array
-            % Exponent codes (from Deymed manual).
-            exp = ['000';  ... % #0 (x 00.05 ms)
-                '001';  ... % #1 (x 00.10 ms)
-                '010';  ... % #2 (x 00.20 ms)
-                '011';  ... % #3 (x 00.50 ms)
-                '100';  ... % #4 (x 01.00 ms)
-                '101';  ... % #5 (x 02.00 ms)
-                '110';  ... % #6 (x 05.00 ms)
-                '111'];     % #7 (x 10.00 ms)
-            
-            % Exponent values (from Deymed manual).
-            vals = [00.05, 00.10, 00.20, 00.50, 01.00, 02.00, 05.00,10.00];
-            
-            % Get the corresponding binary code.
-            rechargeExpVal = vals == stepSize;
-            rechargeExp = exp(rechargeExpVal, :);
-            
-            % Convert fraction value to binary.
-            frc = dec2bin(steps, 7); % for 7-bit array
-            
-            % Add the fraction value to upper/lower bits.
-            upper = bin2dec(['110', frc(1:5)]); % upper bits take bits 1-5
-            
-            % Add the exp value to the lower bits.
-            lower = bin2dec(['111', rechargeExp, frc(6:7)]); % lower bits take bits 6-7
+
+            if var8rem~=0;   warning('Minimum resolution of TTL out delay is 0.05 ms, therefore required charge delay could be set apprixmately'); end
             try
-                % Send commands to device.
-                fwrite(self.port, [upper upper lower lower], 'uint8'); % set bits
                 errorOrSuccess=1; deviceResponse=[];
                 if getResponse~=0, [~, deviceResponse]=self.getStatus; end
             catch
                 errorOrSuccess=0; deviceResponse=[]; warning('The process was unsuccessful, try reconnecting the device manually');
             end
-            
+            function setRecursiveTriggerOutDelay(stepSize,steps)
+                exp = ['000';  '001';  '010'; '011'; '100'; '101';'110'; '111'];
+                
+                % Exponent values (from Deymed manual).
+                vals = [00.05, 00.10, 00.20, 00.50, 01.00, 02.00, 05.00,10.00];
+                
+                % Get the corresponding binary code.
+                rechargeExpVal = vals == stepSize;
+                rechargeExp = exp(rechargeExpVal, :);
+                
+                % Convert fraction value to binary.
+                frc = dec2bin(steps, 7); % for 7-bit array
+                
+                % Add the fraction value to upper/lower bits.
+                upper = bin2dec(['110', frc(1:5)]); % upper bits take bits 1-5
+                
+                % Add the exp value to the lower bits.
+                lower = bin2dec(['111', rechargeExp, frc(6:7)]); % lower bits take bits 6-7
+                fwrite(self.port, [upper upper lower lower], 'uint8'); % set bits
+            end
         end
     end
 end
