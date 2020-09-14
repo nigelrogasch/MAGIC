@@ -373,75 +373,32 @@ classdef duomag < handle
             %    10.00
             
             vals = [0.05, 0.10, 0.20, 00.50, 01.00, 02.00, 05.00,10.00];
-            
-            if round(chargeDelay/vals(8))==single(chargeDelay/vals(8)), var1=ceil(chargeDelay/vals(8));
-            else, var1=floor(chargeDelay/vals(8)); end
-            var1rem=rem(chargeDelay,vals(8));
-            
-            if round(var1rem/vals(7))==single(var1rem/vals(7)), var2=ceil(var1rem/vals(7));
-            else, var2=floor(var1rem/vals(7));end
-            var2rem=rem(var1rem,vals(7));
-            
-            if round(var2rem/vals(6))==single(var2rem/vals(6)), var3=ceil(var2rem/vals(6));
-            else,var3=floor(var2rem/vals(6)); end
-            var3rem=rem(var2rem,vals(6));
-            
-            if round(var3rem/vals(5))==single(var3rem/vals(5)),var4=ceil(var3rem/vals(5));
-            else, var4=floor(var3rem/vals(5)); end
-            var4rem=rem(var3rem,vals(5));
-            
-            if round(var4rem/vals(4))==single(var4rem/vals(4)), var5=ceil((var4rem/vals(4)));
-            else, var5=floor((var4rem/vals(4))); end
-            var5rem=rem(var4rem,vals(4));
-            
-            if round(var5rem/vals(3))==single(var5rem/vals(3)), var6=ceil(var5rem/vals(3));
-            else, var6=floor(var5rem/vals(3));end
-            var6rem=rem(var5rem,vals(3));
-            
-            if round(var6rem/vals(2))==single(var6rem/vals(2)), var7=ceil(var6rem/vals(2));
-            else, var7=floor(var6rem/vals(2)); end
-            var7rem=rem(var6rem,vals(2));
-            
-            if round(var7rem/vals(1))==single(var7rem/vals(1)), var8=ceil(var7rem/vals(1));
-            else, var8=floor(var7rem/vals(1)); end
-            var8rem=rem(var7rem,vals(1));
-            
-            breakpoint=0;
-            for i=1:8
-                varname=['var' num2str(i)];
-                if eval(varname)~=0
-                    switch i
-                        case 1
-                            stepSize=10;
-                            if var1*10==chargeDelay, breakpoint=1; end
-                        case 2
-                            stepSize=5;
-                            if var1*10 + var2*5==chargeDelay, breakpoint=1; end
-                        case 3
-                            stepSize=2;
-                            if var1*10 + var2*5 + var3*2==chargeDelay, breakpoint=1; end
-                        case 4
-                            stepSize=1;
-                            if var1*10 + var2*5 + var3*2 +var4*1==chargeDelay, breakpoint=1; end
-                        case 5
-                            stepSize=0.5;
-                            if var1*10 + var2*5 + var3*2 +var4*1 + var5*0.5==chargeDelay, breakpoint=1; end
-                        case 6
-                            stepSize=0.2;
-                            if var1*10 + var2*5 + var3*2 +var4*1 +var5*0.5+var6*0.2==chargeDelay, breakpoint=1; end
-                        case 7
-                            stepSize=0.1;
-                            if var1*10 + var2*5 + var3*2 +var4*1 +var5*0.5+var6*0.2+var7*0.1==chargeDelay, breakpoint=1; end
-                        case 8
-                            stepSize=0.05;
-                            if var1*10 + var2*5 + var3*2 +var4*1 +var5*0.5+var6*0.2+var7*0.1+var8*0.05==chargeDelay, breakpoint=1; end
-                    end
-                    setRecursiveChargeDelay(stepSize,eval(varname));
-                    if breakpoint==1, break; end
-                end
+            if any(chargeDelay==vals)
+                stepsize=chargeDelay; steps=1; 
+            elseif chargeDelay> 0.05 && chargeDelay <= 6.35 % stepsize=0.05 ms
+                stepsize=0.05; steps=floor(chargeDelay/stepsize); 
+                if chargeDelay/stepsize~=round(chargeDelay/stepsize), warning(['The minimum allowed resolution while setting Recharge delay from 0.05 - 6.35 ms is 0.05 ms therefore the Recharge delay was set to ' num2str(stepsize*steps) 'ms']); end
+            elseif chargeDelay> 6.35 && chargeDelay <= 12.7 % stepsize=0.10 ms
+                stepsize=0.10; steps=floor(chargeDelay/stepsize);
+                if chargeDelay/stepsize~=round(chargeDelay/stepsize), warning(['The minimum allowed resolution while setting Recharge delay from 6.35 - 12.7 ms is 0.10 ms therefore the Recharge delay was set to ' num2str(stepsize*steps) 'ms']); end
+            elseif chargeDelay> 12.7 && chargeDelay <= 25.4 % stepsize=0.20 ms
+                stepsize=0.20; steps=floor(chargeDelay/stepsize);
+                if chargeDelay/stepsize~=round(chargeDelay/stepsize), warning(['The minimum allowed resolution while setting Recharge delay from 12.7 - 25.4 ms is 0.20 ms therefore the Recharge delay was set to ' num2str(stepsize*steps) 'ms']); end
+            elseif chargeDelay> 25.4 && chargeDelay <= 63.5 % stepsize=0.50 ms
+                stepsize=0.50; steps=floor(chargeDelay/stepsize);
+                if chargeDelay/stepsize~=round(chargeDelay/stepsize), warning(['The minimum allowed resolution while setting Recharge delay from 25.4 - 63.5 ms is 0.50 ms therefore the Recharge delay was set to ' num2str(stepsize*steps) 'ms']); end
+            elseif chargeDelay> 63.5 && chargeDelay <= 127  % stepsize=1 ms
+                stepsize=1; steps=floor(chargeDelay/stepsize);
+                if chargeDelay/stepsize~=round(chargeDelay/stepsize), warning(['The minimum allowed resolution while setting Recharge delay from 63.5 - 127 ms is 1 ms therefore the Recharge delay was set to ' num2str(stepsize*steps) 'ms']); end
+            elseif chargeDelay> 127 && chargeDelay <= 254   % stepsize=2 ms
+                stepsize=2; steps=floor(chargeDelay/stepsize);
+                if chargeDelay/stepsize~=round(chargeDelay/stepsize), warning(['The minimum allowed resolution while setting Recharge delay from 127 - 254 ms is 2 ms therefore the Recharge delay was set to ' num2str(stepsize*steps) 'ms']); end
+            elseif chargeDelay> 254 && chargeDelay <= 635   % stepsize=5 ms
+                stepsize=5; steps=floor(chargeDelay/stepsize);
+                if chargeDelay/stepsize~=round(chargeDelay/stepsize), warning(['The minimum allowed resolution while setting Recharge delay from 254 - 635 ms is 5 ms therefore the Recharge delay was set to ' num2str(stepsize*steps) 'ms']); end
             end
-
-            if var8rem~=0;   warning('Minimum resolution of recharge delay is 0.05 ms, therefore required charge delay could be set apprixmately'); end
+            setRecursiveChargeDelay(stepsize,steps);
+            
             try
                 errorOrSuccess=1; deviceResponse=[];
                 if getResponse~=0, [~, deviceResponse]=self.getStatus; end
@@ -536,75 +493,31 @@ classdef duomag < handle
             %    10.00
             
             vals = [0.05, 0.10, 0.20, 00.50, 01.00, 02.00, 05.00,10.00];
-            
-            if round(chargeDelay/vals(8))==single(chargeDelay/vals(8)), var1=ceil(chargeDelay/vals(8));
-            else, var1=floor(chargeDelay/vals(8)); end
-            var1rem=rem(chargeDelay,vals(8));
-            
-            if round(var1rem/vals(7))==single(var1rem/vals(7)), var2=ceil(var1rem/vals(7));
-            else, var2=floor(var1rem/vals(7));end
-            var2rem=rem(var1rem,vals(7));
-            
-            if round(var2rem/vals(6))==single(var2rem/vals(6)), var3=ceil(var2rem/vals(6));
-            else,var3=floor(var2rem/vals(6)); end
-            var3rem=rem(var2rem,vals(6));
-            
-            if round(var3rem/vals(5))==single(var3rem/vals(5)),var4=ceil(var3rem/vals(5));
-            else, var4=floor(var3rem/vals(5)); end
-            var4rem=rem(var3rem,vals(5));
-            
-            if round(var4rem/vals(4))==single(var4rem/vals(4)), var5=ceil((var4rem/vals(4)));
-            else, var5=floor((var4rem/vals(4))); end
-            var5rem=rem(var4rem,vals(4));
-            
-            if round(var5rem/vals(3))==single(var5rem/vals(3)), var6=ceil(var5rem/vals(3));
-            else, var6=floor(var5rem/vals(3));end
-            var6rem=rem(var5rem,vals(3));
-            
-            if round(var6rem/vals(2))==single(var6rem/vals(2)), var7=ceil(var6rem/vals(2));
-            else, var7=floor(var6rem/vals(2)); end
-            var7rem=rem(var6rem,vals(2));
-            
-            if round(var7rem/vals(1))==single(var7rem/vals(1)), var8=ceil(var7rem/vals(1));
-            else, var8=floor(var7rem/vals(1)); end
-            var8rem=rem(var7rem,vals(1));
-            
-            breakpoint=0;
-            for i=1:8
-                varname=['var' num2str(i)];
-                if eval(varname)~=0
-                    switch i
-                        case 1
-                            stepSize=10;
-                            if var1*10==chargeDelay, breakpoint=1; end
-                        case 2
-                            stepSize=5;
-                            if var1*10 + var2*5==chargeDelay, breakpoint=1; end
-                        case 3
-                            stepSize=2;
-                            if var1*10 + var2*5 + var3*2==chargeDelay, breakpoint=1; end
-                        case 4
-                            stepSize=1;
-                            if var1*10 + var2*5 + var3*2 +var4*1==chargeDelay, breakpoint=1; end
-                        case 5
-                            stepSize=0.5;
-                            if var1*10 + var2*5 + var3*2 +var4*1 + var5*0.5==chargeDelay, breakpoint=1; end
-                        case 6
-                            stepSize=0.2;
-                            if var1*10 + var2*5 + var3*2 +var4*1 +var5*0.5+var6*0.2==chargeDelay, breakpoint=1; end
-                        case 7
-                            stepSize=0.1;
-                            if var1*10 + var2*5 + var3*2 +var4*1 +var5*0.5+var6*0.2+var7*0.1==chargeDelay, breakpoint=1; end
-                        case 8
-                            stepSize=0.05;
-                            if var1*10 + var2*5 + var3*2 +var4*1 +var5*0.5+var6*0.2+var7*0.1+var8*0.05==chargeDelay, breakpoint=1; end
-                    end
-                    setRecursiveTriggerOutDelay(stepSize,eval(varname));
-                    if breakpoint==1, break; end
-                end
+            if any(chargeDelay==vals)
+                stepsize=chargeDelay; steps=1; 
+            elseif chargeDelay> 0.05 && chargeDelay <= 6.35 % stepsize=0.05 ms
+                stepsize=0.05; steps=floor(chargeDelay/stepsize); 
+                if chargeDelay/stepsize~=round(chargeDelay/stepsize), warning(['The minimum allowed resolution while setting TTL Out delay from 0.05 - 6.35 ms is 0.05 ms therefore the TTL Out delay was set to ' num2str(stepsize*steps) 'ms']); end
+            elseif chargeDelay> 6.35 && chargeDelay <= 12.7 % stepsize=0.10 ms
+                stepsize=0.10; steps=floor(chargeDelay/stepsize);
+                if chargeDelay/stepsize~=round(chargeDelay/stepsize), warning(['The minimum allowed resolution while setting  TTL Out delay from 6.35 - 12.7 ms is 0.10 ms therefore the  TTL Out delay was set to ' num2str(stepsize*steps) 'ms']); end
+            elseif chargeDelay> 12.7 && chargeDelay <= 25.4 % stepsize=0.20 ms
+                stepsize=0.20; steps=floor(chargeDelay/stepsize);
+                if chargeDelay/stepsize~=round(chargeDelay/stepsize), warning(['The minimum allowed resolution while setting  TTL Out delay from 12.7 - 25.4 ms is 0.20 ms therefore the  TTL Out delay was set to ' num2str(stepsize*steps) 'ms']); end
+            elseif chargeDelay> 25.4 && chargeDelay <= 63.5 % stepsize=0.50 ms
+                stepsize=0.50; steps=floor(chargeDelay/stepsize);
+                if chargeDelay/stepsize~=round(chargeDelay/stepsize), warning(['The minimum allowed resolution while setting  TTL Out delay from 25.4 - 63.5 ms is 0.50 ms therefore the  TTL Out delay was set to ' num2str(stepsize*steps) 'ms']); end
+            elseif chargeDelay> 63.5 && chargeDelay <= 127  % stepsize=1 ms
+                stepsize=1; steps=floor(chargeDelay/stepsize);
+                if chargeDelay/stepsize~=round(chargeDelay/stepsize), warning(['The minimum allowed resolution while setting  TTL Out delay from 63.5 - 127 ms is 1 ms therefore the  TTL Out delay was set to ' num2str(stepsize*steps) 'ms']); end
+            elseif chargeDelay> 127 && chargeDelay <= 254   % stepsize=2 ms
+                stepsize=2; steps=floor(chargeDelay/stepsize);
+                if chargeDelay/stepsize~=round(chargeDelay/stepsize), warning(['The minimum allowed resolution while setting  TTL Out delay from 127 - 254 ms is 2 ms therefore the  TTL Out delay was set to ' num2str(stepsize*steps) 'ms']); end
+            elseif chargeDelay> 254 && chargeDelay <= 635   % stepsize=5 ms
+                stepsize=5; steps=floor(chargeDelay/stepsize);
+                if chargeDelay/stepsize~=round(chargeDelay/stepsize), warning(['The minimum allowed resolution while setting  TTL Out delay from 254 - 635 ms is 5 ms therefore the  TTL Out delay was set to ' num2str(stepsize*steps) 'ms']); end
             end
-
-            if var8rem~=0;   warning('Minimum resolution of TTL out delay is 0.05 ms, therefore required charge delay could be set apprixmately'); end
+            setRecursiveTriggerOutDelay(stepsize,steps);
             try
                 errorOrSuccess=1; deviceResponse=[];
                 if getResponse~=0, [~, deviceResponse]=self.getStatus; end
