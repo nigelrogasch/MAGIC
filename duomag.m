@@ -373,7 +373,6 @@ classdef duomag < handle
             %    10.00
             
             vals = [0.05, 0.10, 0.20, 00.50, 01.00, 02.00, 05.00,10.00];
-            chargeDelay=557.25;
             
             if round(chargeDelay/vals(8))==single(chargeDelay/vals(8)), var1=ceil(chargeDelay/vals(8));
             else, var1=floor(chargeDelay/vals(8)); end
@@ -537,7 +536,6 @@ classdef duomag < handle
             %    10.00
             
             vals = [0.05, 0.10, 0.20, 00.50, 01.00, 02.00, 05.00,10.00];
-            chargeDelay=557.25;
             
             if round(chargeDelay/vals(8))==single(chargeDelay/vals(8)), var1=ceil(chargeDelay/vals(8));
             else, var1=floor(chargeDelay/vals(8)); end
