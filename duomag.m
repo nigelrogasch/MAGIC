@@ -493,29 +493,29 @@ classdef duomag < handle
             %    10.00
             
             vals = [0.05, 0.10, 0.20, 00.50, 01.00, 02.00, 05.00,10.00];
-            if any(chargeDelay==vals)
-                stepsize=chargeDelay; steps=1; 
-            elseif chargeDelay> 0.05 && chargeDelay <= 6.35 % stepsize=0.05 ms
-                stepsize=0.05; steps=floor(chargeDelay/stepsize); 
-                if chargeDelay/stepsize~=round(chargeDelay/stepsize), warning(['The minimum allowed resolution while setting TTL Out delay from 0.05 - 6.35 ms is 0.05 ms therefore the TTL Out delay was set to ' num2str(stepsize*steps) 'ms']); end
-            elseif chargeDelay> 6.35 && chargeDelay <= 12.7 % stepsize=0.10 ms
-                stepsize=0.10; steps=floor(chargeDelay/stepsize);
-                if chargeDelay/stepsize~=round(chargeDelay/stepsize), warning(['The minimum allowed resolution while setting  TTL Out delay from 6.35 - 12.7 ms is 0.10 ms therefore the  TTL Out delay was set to ' num2str(stepsize*steps) 'ms']); end
-            elseif chargeDelay> 12.7 && chargeDelay <= 25.4 % stepsize=0.20 ms
-                stepsize=0.20; steps=floor(chargeDelay/stepsize);
-                if chargeDelay/stepsize~=round(chargeDelay/stepsize), warning(['The minimum allowed resolution while setting  TTL Out delay from 12.7 - 25.4 ms is 0.20 ms therefore the  TTL Out delay was set to ' num2str(stepsize*steps) 'ms']); end
-            elseif chargeDelay> 25.4 && chargeDelay <= 63.5 % stepsize=0.50 ms
-                stepsize=0.50; steps=floor(chargeDelay/stepsize);
-                if chargeDelay/stepsize~=round(chargeDelay/stepsize), warning(['The minimum allowed resolution while setting  TTL Out delay from 25.4 - 63.5 ms is 0.50 ms therefore the  TTL Out delay was set to ' num2str(stepsize*steps) 'ms']); end
-            elseif chargeDelay> 63.5 && chargeDelay <= 127  % stepsize=1 ms
-                stepsize=1; steps=floor(chargeDelay/stepsize);
-                if chargeDelay/stepsize~=round(chargeDelay/stepsize), warning(['The minimum allowed resolution while setting  TTL Out delay from 63.5 - 127 ms is 1 ms therefore the  TTL Out delay was set to ' num2str(stepsize*steps) 'ms']); end
-            elseif chargeDelay> 127 && chargeDelay <= 254   % stepsize=2 ms
-                stepsize=2; steps=floor(chargeDelay/stepsize);
-                if chargeDelay/stepsize~=round(chargeDelay/stepsize), warning(['The minimum allowed resolution while setting  TTL Out delay from 127 - 254 ms is 2 ms therefore the  TTL Out delay was set to ' num2str(stepsize*steps) 'ms']); end
-            elseif chargeDelay> 254 && chargeDelay <= 635   % stepsize=5 ms
-                stepsize=5; steps=floor(chargeDelay/stepsize);
-                if chargeDelay/stepsize~=round(chargeDelay/stepsize), warning(['The minimum allowed resolution while setting  TTL Out delay from 254 - 635 ms is 5 ms therefore the  TTL Out delay was set to ' num2str(stepsize*steps) 'ms']); end
+            if any(triggerOutDelay==vals)
+                stepsize=triggerOutDelay; steps=1; 
+            elseif triggerOutDelay> 0.05 && triggerOutDelay <= 6.35 % stepsize=0.05 ms
+                stepsize=0.05; steps=floor(triggerOutDelay/stepsize); 
+                if triggerOutDelay/stepsize~=round(triggerOutDelay/stepsize), warning(['The minimum allowed resolution while setting TTL Out delay from 0.05 - 6.35 ms is 0.05 ms therefore the TTL Out delay was set to ' num2str(stepsize*steps) 'ms']); end
+            elseif triggerOutDelay> 6.35 && triggerOutDelay <= 12.7 % stepsize=0.10 ms
+                stepsize=0.10; steps=floor(triggerOutDelay/stepsize);
+                if triggerOutDelay/stepsize~=round(triggerOutDelay/stepsize), warning(['The minimum allowed resolution while setting  TTL Out delay from 6.35 - 12.7 ms is 0.10 ms therefore the  TTL Out delay was set to ' num2str(stepsize*steps) 'ms']); end
+            elseif triggerOutDelay> 12.7 && triggerOutDelay <= 25.4 % stepsize=0.20 ms
+                stepsize=0.20; steps=floor(triggerOutDelay/stepsize);
+                if triggerOutDelay/stepsize~=round(triggerOutDelay/stepsize), warning(['The minimum allowed resolution while setting  TTL Out delay from 12.7 - 25.4 ms is 0.20 ms therefore the  TTL Out delay was set to ' num2str(stepsize*steps) 'ms']); end
+            elseif triggerOutDelay> 25.4 && triggerOutDelay <= 63.5 % stepsize=0.50 ms
+                stepsize=0.50; steps=floor(triggerOutDelay/stepsize);
+                if triggerOutDelay/stepsize~=round(triggerOutDelay/stepsize), warning(['The minimum allowed resolution while setting  TTL Out delay from 25.4 - 63.5 ms is 0.50 ms therefore the  TTL Out delay was set to ' num2str(stepsize*steps) 'ms']); end
+            elseif triggerOutDelay> 63.5 && triggerOutDelay <= 127  % stepsize=1 ms
+                stepsize=1; steps=floor(triggerOutDelay/stepsize);
+                if triggerOutDelay/stepsize~=round(triggerOutDelay/stepsize), warning(['The minimum allowed resolution while setting  TTL Out delay from 63.5 - 127 ms is 1 ms therefore the  TTL Out delay was set to ' num2str(stepsize*steps) 'ms']); end
+            elseif triggerOutDelay> 127 && triggerOutDelay <= 254   % stepsize=2 ms
+                stepsize=2; steps=floor(triggerOutDelay/stepsize);
+                if triggerOutDelay/stepsize~=round(triggerOutDelay/stepsize), warning(['The minimum allowed resolution while setting  TTL Out delay from 127 - 254 ms is 2 ms therefore the  TTL Out delay was set to ' num2str(stepsize*steps) 'ms']); end
+            elseif triggerOutDelay> 254 && triggerOutDelay <= 635   % stepsize=5 ms
+                stepsize=5; steps=floor(triggerOutDelay/stepsize);
+                if triggerOutDelay/stepsize~=round(triggerOutDelay/stepsize), warning(['The minimum allowed resolution while setting  TTL Out delay from 254 - 635 ms is 5 ms therefore the  TTL Out delay was set to ' num2str(stepsize*steps) 'ms']); end
             end
             setRecursiveTriggerOutDelay(stepsize,steps);
             try
