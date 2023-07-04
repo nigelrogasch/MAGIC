@@ -15,6 +15,7 @@ This toolbox was co-implemented by:
 - Steven D.Pillen
 - Tom R. Marshall
 - Til O. Bergmann
+- Umair Hussan
 
 ## CITE MAGIC
 If you find this toolbox useful, please also consider citing our paper at https://doi.org/10.1016/j.brs.2018.05.015. 
